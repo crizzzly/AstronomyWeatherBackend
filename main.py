@@ -1,42 +1,47 @@
+from polars import DataFrame
+import polars as pl
+
+from dataplotter import plot_dataframe
 from weatherdata import DwdDataFetcher
 
-cloud_base_convective = []
-cloud_cover_above_7_km = []
-cloud_cover_below_1000_ft = []
-cloud_cover_below_500_ft = []
-cloud_cover_effective = []
-cloud_cover_total = []
-temperature_air_max_200 = []
-temperature_air_min_200 = []
-visibility_range = []
-wind_speed = []
+DF_LENGTH = 78
 
 
 def main():
+    # cloud_base_convective = DataFrame()
+    # cloud_cover_above_7_km = DataFrame()
+    # cloud_cover_below_1000_ft = DataFrame()
+    # cloud_cover_below_500_ft = DataFrame()
+    # cloud_cover_effective = DataFrame()
+    # cloud_cover_total = DataFrame()
+    # temperature_air_max_200 = DataFrame()
+    # temperature_air_min_200 = DataFrame()
+    # visibility_range = DataFrame()
+    # wind_speed = DataFrame()
+
     data_fetcher = DwdDataFetcher()
     mosmix_forecast = data_fetcher.get_mosmix_forecast()
     icon_eu_forecast = data_fetcher.get_icon_eu_forecast()
     icon_forecast = data_fetcher.get_icon_forecast()
-    observation = data_fetcher.get_observation()
-    # observation
-    
-    append_vals(mosmix_forecast)
-    append_vals(icon_forecast)
-    append_vals(icon_eu_forecast)
+    # observation = data_fetcher.get_observation()
+
+    print(mosmix_forecast)
+    date_col = mosmix_forecast['cloud_cover_total']['date'].head(DF_LENGTH)
+    vals_col = mosmix_forecast['cloud_cover_total']['value'].head(DF_LENGTH)
+    icon_eu_col = icon_eu_forecast['cloud_cover_total']['value'].head(DF_LENGTH)
+    icon_col = icon_forecast['cloud_cover_total']['value'].head(DF_LENGTH)
+    cloud_cover_total = pl.DataFrame().with_columns(date=date_col)
+    cloud_cover_total = cloud_cover_total.with_columns(mosmix_value=vals_col)
+    cloud_cover_total = cloud_cover_total.with_columns(icon_eu_value=icon_eu_col)
+    cloud_cover_total = cloud_cover_total.with_columns(icon_value=icon_col)
+
+    plot_dataframe(cloud_cover_total)
+
+    # print(cloud_cover_total)
+    # print(f"observation: \n{observation}")
 
 
 
-def append_vals(vals_dict):
-    cloud_base_convective.append(vals_dict['cloud_base_convective'])
-    cloud_cover_above_7_km.append(vals_dict['cloud_cover_above_7_km'])
-    cloud_cover_below_1000_ft.append(vals_dict['cloud_cover_below_1000_ft'])
-    cloud_cover_below_500_ft.append(vals_dict['cloud_cover_below_500_ft'])
-    cloud_cover_effective.append(vals_dict['cloud_cover_effective'])
-    cloud_cover_total.append(vals_dict['cloud_cover_total'])
-    temperature_air_max_200.append(vals_dict['temperature_air_max_200'])
-    temperature_air_min_200.append(vals_dict['temperature_air_min_200'])
-    visibility_range.append(vals_dict['visibility_range'])
-    wind_speed.append(vals_dict['wind_speed'])
 
 
 if __name__ == '__main__':

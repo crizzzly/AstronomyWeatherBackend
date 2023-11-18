@@ -1,6 +1,10 @@
+import json
 from datetime import datetime
 from pprint import pprint
 
+import pytz
+from polars import DataFrame
+from wetterdienst import Period
 from wetterdienst.core.timeseries.result import ValuesResult
 from wetterdienst.provider.dwd.dmo import DwdDmoType, DwdDmoRequest
 from wetterdienst.provider.dwd.mosmix import DwdMosmixRequest, DwdMosmixType
@@ -14,8 +18,9 @@ DEBUG_DWD_FETCHER = True
 
 def get_closest_station(stations, lat, lon):
     print(f"{datetime.now()} - getting closest station") if DEBUG_DWD_FETCHER else None
+    print(stations)
     closest_stations = stations.all().stations.filter_by_distance(
-        latlon=(LAT, LON),
+        latlon=(lat, lon),
         distance=DISTANCE_TO_STATION,
         unit="km"
     )
@@ -38,20 +43,20 @@ def get_closest_station(stations, lat, lon):
         print(f"X in ID1: {x_in_first_id}")
 
     if "X" in first_station_id:
-        print(f"returning first station: {first_station}") if DEBUG_DWD_FETCHER else None
+        print(f"returning second station: {second_station}") if DEBUG_DWD_FETCHER else None
         return second_station
     else:
-        print(f"returning second station: {second_station}") if DEBUG_DWD_FETCHER else None
-        return first_station
+        print(f"returning first station: {first_station}") if DEBUG_DWD_FETCHER else None
+        return second_station
 
 
-def get_forecast_for_station(df: ValuesResult, params):
+def get_forecast_for_station(df: ValuesResult, params) -> dict[str, DataFrame]:
     print(f"{datetime.now()} - fetching forecast for station") if DEBUG_DWD_FETCHER else None
     values = df.values.all()  #  .df.values.groupby("parameter").all()
 
     grouped_by_param = values.df.group_by("parameter").all()
 
-    weather_data = {}
+    weather_data: dict[str, DataFrame] = {}
     for param in params:
         try:
             filtered_df = grouped_by_param.filter(grouped_by_param['parameter'] == param).drop('parameter')
@@ -62,6 +67,13 @@ def get_forecast_for_station(df: ValuesResult, params):
     print(f"{datetime.now()} - weather_data: {weather_data}") if DEBUG_DWD_FETCHER else None
 
     return weather_data
+
+
+def save_to_file(filename: str, weather_data):
+    print(f"{datetime.now()} - saving weather data") if DEBUG_DWD_FETCHER else None
+
+    with open(f"json_data/{filename}.csv", "w") as outfile:
+        json.dump(weather_data, outfile)
 
 
 
@@ -78,6 +90,7 @@ class DwdDataFetcher:
 
 
     def __init__(self):
+        self.local_timezone = pytz.timezone("Europe/Berlin")
         self.mosmix_stations = DwdMosmixRequest(
             parameter=self.mosmix_params,
             mosmix_type=DwdMosmixType.SMALL
@@ -95,16 +108,19 @@ class DwdDataFetcher:
         )
 
         self.observation_stations = DwdObservationRequest(
-            self.observation_params,
-            DwdObservationResolution.HOURLY
+            parameter=self.observation_params,
+            resolution=DwdObservationResolution.HOURLY,
+            period=Period.NOW
         )
 
 
     def get_observation(self, lat=LAT, lon=LON):
         print(f"{datetime.now()} - getting observation") if DEBUG_DWD_FETCHER else None
 
-        station = get_closest_station(self.observation_stations, lat, lon)
-        return get_forecast_for_station(station, self.observation_params)
+        # station = get_closest_station(self.observation_stations, lat, lon)
+        # pprint(station.values.all().df)
+        # save_to_file("observation", station.values.all().to_csv())
+        return get_forecast_for_station(self.observation_stations, self.observation_params)
 
 
     def get_icon_forecast(self, lat=LAT, lon=LON):
