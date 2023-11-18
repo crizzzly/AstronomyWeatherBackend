@@ -1,0 +1,1 @@
+from weatherdata.dwd_data_fetcher import DwdDataFetcher

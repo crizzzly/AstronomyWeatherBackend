@@ -1,0 +1,10 @@
+wetterdienst==0.67.0
+polars==0.19.14
+Flask==3.0.0
+astral~=3.2
+matplotlib==3.8.2
+pytest~=7.4.3
+xarray==2023.11.0
+numpy==1.26.2
+bigtree~=0.14.4
+wradlib~=2.0.3
