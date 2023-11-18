@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from pprint import pprint
 
+import pandas as pd
 import pytz
 from polars import DataFrame
 from wetterdienst import Period
@@ -11,6 +12,7 @@ from wetterdienst.provider.dwd.mosmix import DwdMosmixRequest, DwdMosmixType
 from wetterdienst.provider.dwd.observation import DwdObservationRequest, DwdObservationResolution
 
 from exceptionhandler import handle_standard_exception
+from utils.utils import save_to_file
 from weatherdata.params import PARAMS_OBSERVATION, PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION
 
 DEBUG_DWD_FETCHER = True
@@ -47,10 +49,10 @@ def get_closest_station(stations, lat, lon):
         return second_station
     else:
         print(f"returning first station: {first_station}") if DEBUG_DWD_FETCHER else None
-        return second_station
+        return first_station
 
 
-def get_forecast_for_station(df: ValuesResult, params) -> dict[str, DataFrame]:
+def get_forecast_for_station(df: ValuesResult, params) -> dict[str, pd.DataFrame]:
     print(f"{datetime.now()} - fetching forecast for station") if DEBUG_DWD_FETCHER else None
     values = df.values.all()  #  .df.values.groupby("parameter").all()
 
@@ -60,7 +62,7 @@ def get_forecast_for_station(df: ValuesResult, params) -> dict[str, DataFrame]:
     for param in params:
         try:
             filtered_df = grouped_by_param.filter(grouped_by_param['parameter'] == param).drop('parameter')
-            weather_data[param] = filtered_df.explode(['date', 'value'])
+            weather_data[param] = filtered_df.explode(['date', 'value']).to_pandas()
         except Exception as e:
             handle_standard_exception("get_forecast_for_station", e)
 
@@ -69,13 +71,13 @@ def get_forecast_for_station(df: ValuesResult, params) -> dict[str, DataFrame]:
     return weather_data
 
 
-def save_to_file(filename: str, weather_data):
-    print(f"{datetime.now()} - saving weather data") if DEBUG_DWD_FETCHER else None
-
-    with open(f"json_data/{filename}.csv", "w") as outfile:
-        json.dump(weather_data, outfile)
-
-
+# def save_to_file(filename: str, weather_data):
+#     print(f"{datetime.now()} - saving weather data") if DEBUG_DWD_FETCHER else None
+#
+#     with open(f"json_data/{filename}.csv", "w") as outfile:
+#         json.dump(weather_data, outfile)
+#
+#
 
 class DwdDataFetcher:
     """"
