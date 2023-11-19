@@ -12,8 +12,7 @@ from wetterdienst.provider.dwd.mosmix import DwdMosmixRequest, DwdMosmixType
 from wetterdienst.provider.dwd.observation import DwdObservationRequest, DwdObservationResolution
 
 from exceptionhandler import handle_standard_exception
-from utils.utils import save_to_file
-from weatherdata.params import PARAMS_OBSERVATION, PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION
+from utils import PARAMS_OBSERVATION, PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION
 
 DEBUG_DWD_FETCHER = True
 

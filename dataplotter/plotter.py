@@ -5,8 +5,14 @@ from polars import DataFrame
 def plot_dataframes(df: dict[str, DataFrame]):
     num_plots = len(df)
 
-    fig, ax = plt.subplots(ncols=1, nrows=num_plots)
+    fig, ax = plt.subplots(
+        ncols=1,
+        nrows=num_plots,
+        sharex="row",
+        figsize=(200, 600)
+    )
     fig.suptitle("Weather Forecast")
+
     counter = 1
 
     for name, df in df.items():
