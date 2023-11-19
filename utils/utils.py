@@ -1,7 +1,6 @@
 import json
 from datetime import datetime
 
-import polars as pl
 import pandas as pd
 
 

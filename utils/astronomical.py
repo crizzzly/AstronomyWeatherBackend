@@ -1,9 +1,12 @@
 # https://astral.readthedocs.io/en/latest/
+from datetime import datetime
+from typing import List, Dict
 
+import pytz
 from astral import LocationInfo
-from _datetime import datetime, timedelta
+from _datetime import datetime, timedelta, timezone, tzinfo
 from astral.sun import sun
-from constants_weatherdata import LAT, LON
+from utils.constants_weatherdata import LAT, LON
 
 my_tz = "Europe/Berlin"
 
@@ -19,23 +22,22 @@ def get_sun_info_from_location(lat=LAT, lon=LON, tz=my_tz, date=datetime.now(), 
     :return: dict[str, datetime] containing Dawn, Sunrise, Sunset and Dusk
     """
     city = LocationInfo(timezone=tz, latitude=lat, longitude=lon)
-    print(city)
-    suninfo = []
+    sun_info = []
 
     for i in range(0, days):
         s = sun(city.observer, date=date+timedelta(days=i))
-        suninfo.append(s)
-        print(s.items())
-        print("today:")
-        print((
-            f'Dawn:    {s["dawn"]}\n'
-            f'Sunrise: {s["sunrise"]}\n'
-            f'Noon:    {s["noon"]}\n'
-            f'Sunset:  {s["sunset"]}\n'
-            f'Dusk:    {s["dusk"]}\n'
-        ))
+        dusk = s['dusk'].replace(tzinfo=pytz.utc)
+        dawn = s['dawn'].replace(tzinfo=pytz.utc)
+        dusk = dusk.astimezone(tz=pytz.timezone(my_tz))
+        dawn = dawn.astimezone(tz=pytz.timezone(my_tz))
+        dd = {
+            "dusk": dusk,
+            "dawn": dawn
+        }
+        sun_info.append(dd)
 
-    return suninfo
+
+    return sun_info
 
 
 if __name__ == '__main__':

@@ -1,1 +1,1 @@
-from dataplotter.plotter import plot_dataframes
+from dataplotter.plotter import plot_forecast_datasets

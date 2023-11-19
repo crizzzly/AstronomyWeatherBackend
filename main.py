@@ -1,3 +1,5 @@
+from pandas import DataFrame
+
 from weatherdata import DataHandler
 import dataplotter
 
@@ -11,11 +13,9 @@ ICON_EU = "icon_eu"
 def main():
     data_handler = DataHandler()
 
-    wd_dict = data_handler.get_latest_weather_datasets()
-    dataplotter.plot_dataframes(wd_dict)
+    wd_dict = data_handler.get_weather_data()
+    # dataplotter.plot_forecast_datasets(wd_dict["today"])
 
-    # print(cloud_cover_total)
-    # print(f"observation: \n{observation}")
 
 
 

@@ -4,20 +4,15 @@ from pprint import pprint
 
 import pandas as pd
 import pytz
-from polars import DataFrame
 from wetterdienst import Period
-from wetterdienst.core.timeseries.result import ValuesResult
 from wetterdienst.provider.dwd.dmo import DwdDmoType, DwdDmoRequest
 from wetterdienst.provider.dwd.mosmix import DwdMosmixRequest, DwdMosmixType
 from wetterdienst.provider.dwd.observation import DwdObservationRequest, DwdObservationResolution
 
-from exceptionhandler import handle_standard_exception
-from utils import PARAMS_OBSERVATION, PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION
-
-DEBUG_DWD_FETCHER = True
+from utils import PARAMS_OBSERVATION, PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION, DEBUG_DWD_FETCHER
 
 
-def get_closest_station(stations, lat, lon):
+def get_data_from_closest_station(stations, lat, lon) -> pd.DataFrame:
     print(f"{datetime.now()} - getting closest station") if DEBUG_DWD_FETCHER else None
     print(stations)
     closest_stations = stations.all().stations.filter_by_distance(
@@ -36,47 +31,28 @@ def get_closest_station(stations, lat, lon):
     first_station = stations.filter_by_station_id(station_id=[first_station_id])
     second_station = stations.filter_by_station_id(station_id=[second_station_id])
 
+    values1 = first_station.values.all().df.to_pandas()
+    values2 = second_station.values.all().df.to_pandas()
+
+
     if DEBUG_DWD_FETCHER:
+        print(f"first station.type = {type(values1)}")
+        print(f"first station.value = {values1}")
         print("first:")
         pprint(first_station)
         print(f"IDs: {first_station_id}, {second_station_id}")
-        x_in_first_id = True if "X" in first_station_id else False
-        print(f"X in ID1: {x_in_first_id}")
+
+
+    x_in_first_id = True if "X" in first_station_id else False
+    print(f"X in ID1: {x_in_first_id}") if DEBUG_DWD_FETCHER else None
 
     if "X" in first_station_id:
-        print(f"returning second station: {second_station}") if DEBUG_DWD_FETCHER else None
-        return second_station
+        print(f"returning second station: {values2}") if DEBUG_DWD_FETCHER else None
+        return values2
     else:
-        print(f"returning first station: {first_station}") if DEBUG_DWD_FETCHER else None
-        return first_station
+        print(f"returning first station: {values1}\ncols: {values1.columns}") if DEBUG_DWD_FETCHER else None
+        return values1
 
-
-def get_forecast_for_station(df: ValuesResult, params) -> dict[str, pd.DataFrame]:
-    print(f"{datetime.now()} - fetching forecast for station") if DEBUG_DWD_FETCHER else None
-    values = df.values.all()  #  .df.values.groupby("parameter").all()
-
-    grouped_by_param = values.df.group_by("parameter").all()
-
-    weather_data: dict[str, DataFrame] = {}
-    for param in params:
-        try:
-            filtered_df = grouped_by_param.filter(grouped_by_param['parameter'] == param).drop('parameter')
-            weather_data[param] = filtered_df.explode(['date', 'value']).to_pandas()
-        except Exception as e:
-            handle_standard_exception("get_forecast_for_station", e)
-
-    print(f"{datetime.now()} - weather_data: {weather_data}") if DEBUG_DWD_FETCHER else None
-
-    return weather_data
-
-
-# def save_to_file(filename: str, weather_data):
-#     print(f"{datetime.now()} - saving weather data") if DEBUG_DWD_FETCHER else None
-#
-#     with open(f"json_data/{filename}.csv", "w") as outfile:
-#         json.dump(weather_data, outfile)
-#
-#
 
 class DwdDataFetcher:
     """"
@@ -91,10 +67,14 @@ class DwdDataFetcher:
 
 
     def __init__(self):
+        self.mosmix_stations = None
+        self.icon_stations = None
+        self.icon_eu_stations = None
+
         self.local_timezone = pytz.timezone("Europe/Berlin")
         self.mosmix_stations = DwdMosmixRequest(
             parameter=self.mosmix_params,
-            mosmix_type=DwdMosmixType.SMALL
+            mosmix_type=DwdMosmixType.LARGE
         )
 
         self.icon_stations = DwdDmoRequest(
@@ -115,26 +95,15 @@ class DwdDataFetcher:
         )
 
 
-    def get_observation(self, lat=LAT, lon=LON):
-        print(f"{datetime.now()} - getting observation") if DEBUG_DWD_FETCHER else None
-
-        # station = get_closest_station(self.observation_stations, lat, lon)
-        # pprint(station.values.all().df)
-        # save_to_file("observation", station.values.all().to_csv())
-        return get_forecast_for_station(self.observation_stations, self.observation_params)
-
-
     def get_icon_forecast(self, lat=LAT, lon=LON):
         print(f"{datetime.now()} - getting icon forecast") if DEBUG_DWD_FETCHER else None
-        station = get_closest_station(self.icon_stations, lat, lon)
-        return get_forecast_for_station(station, self.icon_params)
+        return get_data_from_closest_station(self.icon_stations, lat, lon)
 
 
     def get_icon_eu_forecast(self, lat=LAT, lon=LON):
         print(f"{datetime.now()} - getting icon_eu forecast") if DEBUG_DWD_FETCHER else None
 
-        station = get_closest_station(self.icon_eu_stations, lat, lon)
-        return get_forecast_for_station(station, self.icon_params)
+        return get_data_from_closest_station(self.icon_eu_stations, lat, lon)
 
 
     def get_mosmix_forecast(self, lat=LAT, lon=LON):
@@ -146,8 +115,17 @@ class DwdDataFetcher:
         """
         print(f"{datetime.now()} - getting mosmix forecast") if DEBUG_DWD_FETCHER else None
 
-        closest_stations = get_closest_station(self.mosmix_stations, lat, lon)
-        return get_forecast_for_station(closest_stations, self.mosmix_params)
+        return get_data_from_closest_station(self.mosmix_stations, lat, lon)
+
+
+    def get_observation(self, lat=LAT, lon=LON):
+        print(f"{datetime.now()} - getting observation") if DEBUG_DWD_FETCHER else None
+        pass
+        # station = get_data_from_closest_station(self.observation_stations, lat, lon)
+        # pprint(station.values.all().df)
+        # save_to_file("observation", station.values.all().to_csv())
+        # return get_forecast_per_day_as_list(self.observation_stations, self.observation_params)
+
 
 
 
