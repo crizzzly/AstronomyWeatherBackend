@@ -7,6 +7,13 @@ from utils import FORECAST_FROM_FILE, DF_LENGTH, get_sun_info_from_location, sav
 
 
 def group_df_per_parameter(df: DataFrame, params: list[str]) -> dict[str, DataFrame]:
+    """
+    Group the given DataFrame `df` per parameter.
+
+    :param df: The DataFrame to be grouped.
+    :param params: The list of parameters to group the DataFrame by.
+    :return: A dictionary containing parameter names as keys and the corresponding grouped DataFrames as values.
+   """
     print(f"{datetime.now()} - group_df_per_parameter") if DEBUG_SORT_DATA else None
     df.reset_index(inplace=True)
     print(f"df columns: {df.columns}") if DEBUG_SORT_DATA else None
@@ -27,10 +34,22 @@ def group_df_per_parameter(df: DataFrame, params: list[str]) -> dict[str, DataFr
 
 
 def sort_df_per_param(params, mosmix, icon, icon_eu, name) -> dict[str, DataFrame]:
+    """
+    To display the forecasts of different models, each parameter is fetched frim
+    each model and combined in one df.
+    Sorts the dataframes per parameter and returns a dictionary of sorted dataframes.
+    :param params: A list of parameters.
+    :param mosmix: A dictionary containing the mosmix data for each parameter.
+    :param icon: A dictionary containing the icon data for each parameter.
+    :param icon_eu: A dictionary containing the icon_eu data for each parameter.
+    :param name: The name of the parameter.
+    :return: A dictionary containing the sorted dataframes per parameter.
+    """
+
     print(f"sort_df_per_param") if DEBUG_SORT_DATA else None
     sorted_df = {}
     for param in params:
-        df = create_mixed_df_for_param(param, mosmix[param], icon[param], icon_eu[param])
+        df = _create_mixed_df_for_param(param, mosmix[param], icon[param], icon_eu[param])
         if not df.empty:
             sorted_df[param] = df
             if not FORECAST_FROM_FILE:
@@ -39,13 +58,15 @@ def sort_df_per_param(params, mosmix, icon, icon_eu, name) -> dict[str, DataFram
     return sorted_df
 
 
-def create_mixed_df_for_param(
+def _create_mixed_df_for_param(
         parameter: list,
         mosmix_forecast: DataFrame,
         icon_forecast: DataFrame,
         icon_eu_forecast: DataFrame
 ) -> DataFrame:
     """
+    To display the forecasts of different models, each parameter is fetched frim
+    each model and combined in one df.
     creates dataframe for parameter with values from forecasts
     :param parameter:
     :param mosmix_forecast:
@@ -70,7 +91,7 @@ def create_mixed_df_for_param(
     return df
     save_to_file(parameter, df)
 # except Exception as e:
-#     handle_standard_exception("Exception in create_mixed_df_for_param", e)
+#     handle_standard_exception("Exception in _create_mixed_df_for_param", e)
 
 
 def get_nights_only_as_list(df: DataFrame) -> list[DataFrame]:

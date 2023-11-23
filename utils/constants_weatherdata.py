@@ -1,7 +1,10 @@
 import os
 
-LAT = float(os.environ["MY_LAT"])
-LON = float(os.environ["MY_LON"])
+from awb_secrets import MY_LAT, MY_LON
+
+LAT = MY_LAT
+LON = MY_LON
+
 DISTANCE_TO_STATION = 30.0
 DF_LENGTH = 78
 
@@ -11,10 +14,10 @@ ICON_EU = "icon_eu_forecast"
 OBSERVATION = "observation_current"
 
 PARAMS_MOSMIX = [
-    # 'cloud_cover_above_7_km',
+    'cloud_cover_above_7_km',
     'cloud_cover_below_1000_ft',
     'cloud_cover_below_500_ft',
-    # 'cloud_cover_between_2_to_7_km',
+    'cloud_cover_between_2_to_7_km',
     # 'cloud_cover_effective',
     'cloud_cover_total',
     # 'temperature_air_max_200',
