@@ -1,6 +1,7 @@
 import math
 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from pandas import DataFrame
 
 from utils import TEMP_TITLE, CLOUDS_TITLE, REST_TITLE, DEBUG_PLOTTER
@@ -12,13 +13,17 @@ plt_style = "classic"  # seaborn-v0_8-darkgrid"
 def plot_forecast_datasets(df: dict[str, DataFrame]):
     clouds, temp, rest = prepare_datasets(df)
     if DEBUG_PLOTTER:
-        # print(f"plot_forecast_datasets: {df}\n\n\n")
         print(f"plot_forecast_datasets: {clouds}\n\n\n")
         print(f"plot_forecast_datasets: {temp}\n\n\n")
         print(f"plot_forecast_datasets: {rest}\n\n\n")
-    plot_datasets(CLOUDS_TITLE, clouds)
-    plot_datasets(TEMP_TITLE, temp)
-    plot_datasets(REST_TITLE, rest)
+    fig_clouds = plot_datasets(CLOUDS_TITLE, clouds)
+    fig_temp = plot_datasets(TEMP_TITLE, temp)
+    fig_rest = plot_datasets(REST_TITLE, rest)
+
+    if DEBUG_PLOTTER:
+        fig_temp.show()
+        fig_clouds.show()
+        fig_rest.show()
 
 
 def prepare_datasets(datasets: dict[str, DataFrame]) -> list[dict[str, DataFrame]]:
@@ -47,17 +52,10 @@ def prepare_datasets(datasets: dict[str, DataFrame]) -> list[dict[str, DataFrame
         print(f"Rest: \n{rest}")
     return [clouds, temp, rest]
 
-    # return_dict = {
-    #     "Clouds": clouds,
-    #     "Temperature": temp,
-    #     "WindVisibility": rest
-    # }
-    #
-    # return return_dict
 
 
 
-def plot_datasets(title: str, data: dict[str, DataFrame]):
+def plot_datasets(title: str, data: dict[str, DataFrame]) -> Figure:
     first_entry = next(iter(data))
     print(f"dict: {data[first_entry]}") if DEBUG_PLOTTER else None
     print(f"dict: {type(data)}") if DEBUG_PLOTTER else None
@@ -70,10 +68,11 @@ def plot_datasets(title: str, data: dict[str, DataFrame]):
     cols = math.ceil(num_plots / rows)
     print(f"num_plots: {num_plots}, rows: {rows}, cols: {cols}")
 
+    # plt.close()
     plt.style.use(plt_style)
     plt.xlim(xmin, xmax)
     plt.ylim(0, 100)
-    fig, ax = plt.subplots(
+    fig, axs = plt.subplots(
         nrows=rows, ncols=cols,
         sharex=True,
         sharey=True,
@@ -82,16 +81,17 @@ def plot_datasets(title: str, data: dict[str, DataFrame]):
     )
     fig.suptitle(title)
 
-    counter = 1
+    axs = axs.flatten()
+
+    counter = 0
     for name, data_df in data.items():
-        # ax = fig.subplots(counter)
-        ax = plt.subplot(rows, cols, counter)
-        ax.set_title(name)
-        ax.plot(data_df["mosmix_value"], label="Mosmix")
-        ax.plot(data_df["icon_value"], label="Icon")
-        ax.plot(data_df["icon_eu_value"], label="Icon_EU")
+        ax = axs[counter]
+        ax.set_title(str(name))
+        ax.plot(data_df["date"], data_df["mosmix_value"], label="Mosmix")
+        ax.plot(data_df["date"], data_df["icon_value"], label="Icon")
+        ax.plot(data_df["date"], data_df["icon_eu_value"], label="Icon_EU")
         ax.legend(loc="lower left")
         counter += 1
 
     plt.savefig(f"figures/{title}.png")
-    plt.show()
+    return fig
