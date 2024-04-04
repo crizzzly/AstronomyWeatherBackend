@@ -4,29 +4,42 @@ from io import StringIO
 
 import pandas as pd
 from pandas import DataFrame
+from pandas.core.groupby.generic import DataFrameGroupBy
 
-from exceptionhandler.exception_handler import handle_standard_exception
+from exceptionhandler.exception_handler import handle_exception, print_debugging_function_header, \
+    print_debugging_message
 from utils.constants import DEBUG_DF_UTILS, DEBUG_UTILS
-from utils.debugging_outputs import print_function_header
 from utils.file_utils import load_json_from_file
 
 _filename = os.path.basename(__file__)
 local_tz = datetime.now().astimezone().tzinfo
 
 
-def data_exploration(df: DataFrame) -> None:
+def data_exploration(df: DataFrame|DataFrameGroupBy) -> None:
     """
     A function for exploring the data in the given DataFrame.
     Takes a DataFrame as input and does not return anything.
     """
 
-    print(f"{datetime.now()} - dataframe_utils - data_exploration") if DEBUG_DF_UTILS else None
+    print_debugging_function_header(_filename, "data_exploration")
+    print("-------------------- head -------------------- ")
+    print(df.head(10))
+    # print("-------------------- describe -------------------- ")
+    # print(df.describe())
 
-    print(f"shape\t\t\t{df.shape}")
-    print("Columns")
-    print(df.columns)
-    print("values")
-    print(df.values)
+    if type(df) is DataFrame:
+        print(f"shape: \t\t\t{df.shape}")
+        print("-------------------- Columns -------------------- ")
+        print(df.columns)
+        print("-------------------- indices -------------------- ")
+        print(df.index)
+    elif type(df) is DataFrameGroupBy:
+        pass
+        # print("-------------------- groups -------------------- ")
+        # print(df.groups)
+        # print("-------------------- count -------------------- ")
+        # print(df.count())
+
 
 
 def clean_dataset(df: DataFrame) -> DataFrame:
@@ -44,23 +57,22 @@ def clean_dataset(df: DataFrame) -> DataFrame:
     Returns:
     DataFrame: The cleaned DataFrame with columns 'station_id', 'dataset', 'parameter', 'date'
     """
-    print("----------------------------------------------------------------")
-    print(f"{datetime.now()} - dataframe_utils.py - clean_dataset")
-    print("----------------------------------------------------------------")
+    print_debugging_function_header(_filename, "clean_dataset")
 
     if DEBUG_DF_UTILS:
-        print(f"dataset")
-        print(df)
+        print_debugging_message(f"dataset")
+        print_debugging_message(df.to_string(max_rows=5, show_dimensions=True, min_rows=df.columns.size))
 
-    name = df.loc[['station_id'][0]]
+    name = df['station_id'][0]
+    print(name)
 
 
-    df.drop(['quality', 'dataset'], axis=1, inplace=True)  # , 'station_id'
+    df.drop(['quality', 'dataset', 'station_id'], axis=1, inplace=True)  # , 'station_id'
     df.dropna(inplace=True)
 
     if DEBUG_DF_UTILS:
-        print("datatypes before cleaning")
-        print(df.dtypes)
+        print_debugging_message("datatypes before cleaning")
+        print_debugging_message(str(df.dtypes))
 
     return df
 
@@ -76,13 +88,11 @@ def reformat_df_values(df: DataFrame) -> DataFrame:
     DataFrame: The reformatted DataFrame
     """
     if DEBUG_DF_UTILS:
-        print("----------------------------------------------------------------")
-        print(f"{datetime.now()} - dataframe_utils - reformat_df_values")
-        print("----------------------------------------------------------------")
-        print("")
-        print(f"datatypes: {df.dtypes}")
-        print(f"columns: {df.columns}")
-        print("")
+        print_debugging_function_header(_filename, "reformat_df_values")
+        print_debugging_message("", "")
+        print_debugging_message("datatypes", str(df.dtypes))
+        print_debugging_message("columns", df.columns)
+        print_debugging_message("")
 
 
     df['date'] = pd.to_datetime(df['date'], utc=True)
@@ -93,14 +103,12 @@ def reformat_df_values(df: DataFrame) -> DataFrame:
 
 def read_mixed_df_from_file(filename):
     if DEBUG_UTILS:
-        print_function_header(_filename, "read_mixed_df_from_file")
-
-
+        print_debugging_function_header(_filename, "read_mixed_df_from_file")
     try:
         df = pd.read_json(StringIO(load_json_from_file(filename)))
     except Exception as e:
-        print_function_header(_filename, "read_mixed_df_from_file")
-        handle_standard_exception("Data_handler.py read_mixed_df_from_file", e)
+        print_debugging_function_header(_filename, "read_mixed_df_from_file")
+        handle_exception("Data_handler.py read_mixed_df_from_file", e)
         df = DataFrame()
     else:
         df["date"] = pd.to_datetime(df["date"], unit="s")

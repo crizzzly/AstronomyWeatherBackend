@@ -3,7 +3,8 @@ import os
 
 from utils.constants import DEBUG_DWD_FETCHER
 from utils.constants_weatherdata import PARAMS_OBSERVATION, PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION
-from exceptionhandler.exception_handler import handle_standard_exception
+from exceptionhandler.exception_handler import handle_exception, print_debugging_function_header, \
+    print_debugging_message
 
 from datetime import datetime  #, timedelta
 from pprint import pprint
@@ -15,8 +16,6 @@ from wetterdienst.provider.dwd.dmo import DwdDmoType, DwdDmoRequest
 from wetterdienst.provider.dwd.mosmix import DwdMosmixRequest, DwdMosmixType
 from wetterdienst.provider.dwd.observation import DwdObservationRequest, DwdObservationResolution
 
-from utils.debugging_outputs import print_function_header
-
 # from wetterdienst.provider.dwd.observation.util.parameter. import DwdObservationTime
 # from wetterdienst.provider.dwd.observation.values import DwdObservationValue
 
@@ -24,7 +23,7 @@ _filename = os.path.basename(__file__)
 
 
 
-def _get_data_from_closest_station(stations, lat, lon) -> pd.DataFrame:
+def _get_data_from_closest_station(stations, lat, lon) -> dict[str, pd.DataFrame]:
     """
     Returns only data from the closest weather station based on given lat and lon.
     Filters the stations based on distance, retrieves data from the two closest stations,
@@ -34,11 +33,11 @@ def _get_data_from_closest_station(stations, lat, lon) -> pd.DataFrame:
     :param stations: Polaris DataFrame containing StationResult from dwd data.
     :param lat: Latitude of the location.
     :param lon: Longitude of the location.
-    :return: Pandas DataFrame from the closest station.
+    :return: dictionary containing the city name (str) and Pandas DataFrame from the closest station.
     """
     if DEBUG_DWD_FETCHER:
-        print_function_header(_filename, "_get_data_from_closest_station")
-        print(stations)
+        print_debugging_function_header(_filename, "_get_data_from_closest_station")
+        print_debugging_message(stations)
 
     closest_stations = stations.all().stations.filter_by_distance(
         latlon=(lat, lon),
@@ -46,10 +45,9 @@ def _get_data_from_closest_station(stations, lat, lon) -> pd.DataFrame:
         unit="km"
     )
     if DEBUG_DWD_FETCHER:
-        print(f"dwd_data_fetcher.py - _get_data_from_closest_station()")
-        print(f"closest stations:")
+        print_debugging_message(f"closest stations:")
         pprint(closest_stations)
-        print(f"closest stations values:")
+        print_debugging_message(f"closest stations values:")
         pprint(closest_stations.parameter)
 
     first_station_id = closest_stations.df.row(0)[0]
@@ -59,18 +57,21 @@ def _get_data_from_closest_station(stations, lat, lon) -> pd.DataFrame:
 
     # convert polars to pandas
     values1 = first_station.values.all().df.to_pandas()
+    city1 = first_station.df["name"]
     values2 = second_station.values.all().df.to_pandas()
+    city2 = second_station.df["name"]
 
 
     if DEBUG_DWD_FETCHER:
-        print(f"dwd_data_fetcher.py - _get_data_from_closest_station()")
-        print(f"\n\nfirst station.type = {type(values1)}")
-        print(f"first station.value = {values1}")
-        print("first:")
+        print_debugging_function_header(_filename, "_get_data_from_closest_station")
+        print_debugging_message("\n\n")
+        print_debugging_message("first station.type", type(values1))
+        print_debugging_message("first station.value", values1)
+        print_debugging_message("first:", city1[0])
         pprint(first_station)
-        print(f"second station.type = {type(values2)}")
-        print(f"second station.value = {values2}")
-        print("second:")
+        print_debugging_message("second station.type", type(values2))
+        print_debugging_message("second station.value", values2)
+        print_debugging_message("second:", city2[0])
         pprint(second_station)
 
 
@@ -88,10 +89,9 @@ def _get_data_from_closest_station(stations, lat, lon) -> pd.DataFrame:
 
 def _get_observation_data_from_best_station(stations: DwdObservationRequest, lat, lon) -> pd.DataFrame:
     if DEBUG_DWD_FETCHER:
-        print(f"{datetime.now()} - dwd_data_fetcher.py - _get_observation_data_from_best_station") \
-            if DEBUG_DWD_FETCHER else None
-        print(f"{datetime.now()} - getting closest station") if DEBUG_DWD_FETCHER else None
-        print(stations.all().df)
+        print_debugging_function_header(_filename, "_get_observation_data_from_best_station")
+        print_debugging_message(f"{datetime.now()} - getting closest station")
+        print_debugging_message(stations.all().df)
 
     # filter StationsResult by distance
     try:
@@ -101,14 +101,14 @@ def _get_observation_data_from_best_station(stations: DwdObservationRequest, lat
             unit="km"
         )
         if DEBUG_DWD_FETCHER:
-            print("dwd_data_fetcher.py - _get_observation_data_from_best_station()")
-            print(f"closest stations:")
+            print_debugging_message("dwd_data_fetcher.py - _get_observation_data_from_best_station()")
+            print_debugging_message(f"closest stations:")
             pprint(closest_stations)
-            print(f"closest stations values:")
+            print_debugging_message(f"closest stations values:")
             pprint(closest_stations.parameter)
+
     except Exception as e:
-        print_function_header(_filename, "_get_observation_data_from_best_station")
-        handle_standard_exception("dwd_data_fetcher.py - _get_observation_data_from_best_station", e)
+        handle_exception("dwd_data_fetcher.py - _get_observation_data_from_best_station", e)
     else:
         first_station_id = closest_stations.df.row(0)[0]
         second_station_id = closest_stations.df.row(1)[0]
@@ -119,13 +119,13 @@ def _get_observation_data_from_best_station(stations: DwdObservationRequest, lat
         values2 = second_station.values.all().df.to_pandas()
 
         if DEBUG_DWD_FETCHER:
-            print(f"\n\nfirst station.type = {type(values1)}")
-            print(f"first station.value = {values1}")
-            print("first:")
+            print_debugging_message(f"\n\nfirst station.type = {type(values1)}")
+            print_debugging_message(f"first station.value = {values1}")
+            print_debugging_message("first:")
             pprint(first_station)
-            print(f"second station.type = {type(values2)}")
-            print(f"second station.value = {values2}")
-            print("second:")
+            print_debugging_message(f"second station.type = {type(values2)}")
+            print_debugging_message(f"second station.value = {values2}")
+            print_debugging_message("second:")
             pprint(second_station)
         return values1
 
@@ -181,12 +181,12 @@ class DwdDataFetcher:
 
 
     def get_icon_forecast(self, lat=LAT, lon=LON):
-        print(f"{datetime.now()} - getting df_icon forecast") if DEBUG_DWD_FETCHER else None
+        print_debugging_function_header(_filename, "getting df_icon forecast") if DEBUG_DWD_FETCHER else None
         return _get_data_from_closest_station(self.icon_stations, lat, lon)
 
 
     def get_icon_eu_forecast(self, lat=LAT, lon=LON):
-        print(f"{datetime.now()} - getting icon_eu forecast") if DEBUG_DWD_FETCHER else None
+        print_debugging_function_header(_filename, "getting icon_eu forecast") if DEBUG_DWD_FETCHER else None
 
         return _get_data_from_closest_station(self.icon_eu_stations, lat, lon)
 
@@ -198,7 +198,7 @@ class DwdDataFetcher:
         :param lat:
         :return: closest station as df, containing one row with lists of forecast data
         """
-        print(f"{datetime.now()} - getting df_mosmix forecast") if DEBUG_DWD_FETCHER else None
+        print_debugging_function_header(_filename, "getting df_mosmix forecast") if DEBUG_DWD_FETCHER else None
 
         return _get_data_from_closest_station(self.mosmix_stations, lat, lon)
 
