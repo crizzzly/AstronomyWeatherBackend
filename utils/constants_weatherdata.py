@@ -1,5 +1,3 @@
-import os
-
 from awb_secrets import MY_LAT, MY_LON
 
 LAT = MY_LAT
@@ -28,6 +26,10 @@ PARAMS_MOSMIX = [
     'wind_direction',
     'wind_speed',
 ]
+
+PARAMS_SHORT = ["nh", "nl", "n05", "nm", "n", "ttt", "td", "vv", "dd"]
+# (parameter=[(nh/df_icon), (nl/df_icon), (n05/df_icon), (nm/df_icon),
+# (n/df_icon), (ttt/df_icon), (td/df_icon), (vv/df_icon), (dd/df_icon)
 
 PARAMS_OBSERVATION = ["cloud_cover_layer1", "cloud_cover_layer2", "cloud_cover_layer3", "cloud_cover_layer4",
                       "cloud_type_layer1", "cloud_type_layer2", "cloud_type_layer3", "cloud_type_layer4",

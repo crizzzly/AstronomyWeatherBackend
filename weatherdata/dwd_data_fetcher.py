@@ -1,28 +1,34 @@
-from wetterdienst.core.timeseries.result import StationsResult
+# from wetterdienst.core.timeseries.result import StationsResult
+import os
 
-from utils.constants import  DEBUG_DWD_FETCHER
+from utils.constants import DEBUG_DWD_FETCHER
 from utils.constants_weatherdata import PARAMS_OBSERVATION, PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION
 from exceptionhandler.exception_handler import handle_standard_exception
 
-from datetime import datetime, timedelta
+from datetime import datetime  #, timedelta
 from pprint import pprint
 
 import pandas as pd
 import pytz
-from wetterdienst import Period, Parameter
+from wetterdienst import Period  #, Parameter
 from wetterdienst.provider.dwd.dmo import DwdDmoType, DwdDmoRequest
 from wetterdienst.provider.dwd.mosmix import DwdMosmixRequest, DwdMosmixType
 from wetterdienst.provider.dwd.observation import DwdObservationRequest, DwdObservationResolution
+
+from utils.debugging_outputs import print_function_header
+
 # from wetterdienst.provider.dwd.observation.util.parameter. import DwdObservationTime
 # from wetterdienst.provider.dwd.observation.values import DwdObservationValue
+
+_filename = os.path.basename(__file__)
 
 
 
 def _get_data_from_closest_station(stations, lat, lon) -> pd.DataFrame:
     """
-    Returns only data from closest weather station based on given lat and lon.
+    Returns only data from the closest weather station based on given lat and lon.
     Filters the stations based on distance, retrieves data from the two closest stations,
-    converts the VaulesResult of those station data to Pandas DataFrame
+    converts the Values-Result of those station data to Pandas DataFrame
     returns the data from either the first or second station depending on the station ID.
 
     :param stations: Polaris DataFrame containing StationResult from dwd data.
@@ -30,10 +36,10 @@ def _get_data_from_closest_station(stations, lat, lon) -> pd.DataFrame:
     :param lon: Longitude of the location.
     :return: Pandas DataFrame from the closest station.
     """
+    if DEBUG_DWD_FETCHER:
+        print_function_header(_filename, "_get_data_from_closest_station")
+        print(stations)
 
-
-    print(f"{datetime.now()} - getting closest station") if DEBUG_DWD_FETCHER else None
-    print(stations)
     closest_stations = stations.all().stations.filter_by_distance(
         latlon=(lat, lon),
         distance=DISTANCE_TO_STATION,
@@ -82,7 +88,8 @@ def _get_data_from_closest_station(stations, lat, lon) -> pd.DataFrame:
 
 def _get_observation_data_from_best_station(stations: DwdObservationRequest, lat, lon) -> pd.DataFrame:
     if DEBUG_DWD_FETCHER:
-        print(f"{datetime.now()} - dwd_data_fetcher.py - _get_observation_data_from_best_station") if DEBUG_DWD_FETCHER else None
+        print(f"{datetime.now()} - dwd_data_fetcher.py - _get_observation_data_from_best_station") \
+            if DEBUG_DWD_FETCHER else None
         print(f"{datetime.now()} - getting closest station") if DEBUG_DWD_FETCHER else None
         print(stations.all().df)
 
@@ -94,11 +101,13 @@ def _get_observation_data_from_best_station(stations: DwdObservationRequest, lat
             unit="km"
         )
         if DEBUG_DWD_FETCHER:
+            print("dwd_data_fetcher.py - _get_observation_data_from_best_station()")
             print(f"closest stations:")
             pprint(closest_stations)
             print(f"closest stations values:")
             pprint(closest_stations.parameter)
     except Exception as e:
+        print_function_header(_filename, "_get_observation_data_from_best_station")
         handle_standard_exception("dwd_data_fetcher.py - _get_observation_data_from_best_station", e)
     else:
         first_station_id = closest_stations.df.row(0)[0]
@@ -118,13 +127,14 @@ def _get_observation_data_from_best_station(stations: DwdObservationRequest, lat
             print(f"second station.value = {values2}")
             print("second:")
             pprint(second_station)
+        return values1
 
 
 class DwdDataFetcher:
     """"
     Dwd Data Fetcher for Mosmix, Icon, Icon EU and Observation data
-    searches for closest weatherstation first
-    returns forecast/observation weatherdata for closest weatherstation
+    searches for closest weather station first
+    returns forecast/observation weatherdata for closest weather station
     """
 
     observation_params = PARAMS_OBSERVATION
@@ -171,7 +181,7 @@ class DwdDataFetcher:
 
 
     def get_icon_forecast(self, lat=LAT, lon=LON):
-        print(f"{datetime.now()} - getting icon forecast") if DEBUG_DWD_FETCHER else None
+        print(f"{datetime.now()} - getting df_icon forecast") if DEBUG_DWD_FETCHER else None
         return _get_data_from_closest_station(self.icon_stations, lat, lon)
 
 
@@ -188,23 +198,11 @@ class DwdDataFetcher:
         :param lat:
         :return: closest station as df, containing one row with lists of forecast data
         """
-        print(f"{datetime.now()} - getting mosmix forecast") if DEBUG_DWD_FETCHER else None
+        print(f"{datetime.now()} - getting df_mosmix forecast") if DEBUG_DWD_FETCHER else None
 
         return _get_data_from_closest_station(self.mosmix_stations, lat, lon)
-
-
-# TODO: using observation data? really needed?
-    def get_observation(self, lat=LAT, lon=LON):
-        print(f"{datetime.now()} - getting observation") if DEBUG_DWD_FETCHER else None
-
-        return _get_observation_data_from_best_station(self.observation_stations, lat, lon)
-        # pprint(station.values.all().df)
-        # return get_forecast_per_day_as_list(self.observation_stations, self.observation_params)
-
-
 
 
 if __name__ == '__main__':
     dwd_data_fetcher = DwdDataFetcher()
     pprint(dwd_data_fetcher.get_mosmix_forecast())
-

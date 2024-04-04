@@ -1,131 +1,156 @@
-from io import StringIO
+import os
 
-from dataplotter.plotter import plot_forecast_datasets
-from utils.utils import load_from_file
-from utils.constants import FORECAST_FROM_FILE
-from utils.constants_weatherdata import PARAMS_MOSMIX, PARAMS_OBSERVATION
-from exceptionhandler.exception_handler import handle_standard_exception
+from dataplotter.plotter import plot_with_px
+from utils.debugging_outputs import print_function_header
+from utils.file_utils import save_pd_as_json  # , load_json_from_file, read_mixed_df_from_file
+from utils.dataframe_utils import reformat_df_values  # ,data_exploration
+from utils.constants import FORECAST_FROM_FILE, DEBUG_DATA_HANDLER
+from utils.dataframe_utils import clean_dataset
+from weatherdata.dwd_data_fetcher import DwdDataFetcher
+# from exceptionhandler.exception_handler import handle_standard_exception
 
-
-import tzlocal
 import pandas as pd
 from pandas import DataFrame
 
-from weatherdata.dwd_data_fetcher import DwdDataFetcher
-from weatherdata.sort_data import get_nights_only_as_list, sort_df_per_param, group_df_per_parameter
 
-
-local_tz = tzlocal.get_localzone()
-
+_filename = os.path.basename(__file__)
 
 # TODO: Reshape in functions "get/load_data", "prepare/sort_data" and "plot_data
 #  and use public function "load_new_dataset" as public function
 
-def read_mixed_df_from_file(filename):
-    try:
-        df = pd.read_json(StringIO(load_from_file(filename)))
-    except Exception as e:
-        handle_standard_exception("Data_handler.py read_mixed_df_from_file")
-    finally:
-        df["date"] = pd.to_datetime(df["date"], unit="s")
-        df["date"] = df["date"].dt.tz_localize("UTC").dt.tz_convert(local_tz)
-    return df
-
 
 class DataHandler:
     def __init__(self):
-
         self.fetcher = DwdDataFetcher()
-        self.sorted_forecast_dict = {}  # : dict[str, DataFrame] = {}
-
-        self.forecast_tonight = DataFrame()
-        self.forecast_tomorrow: dict[str, dict[str, DataFrame]] = {}
-        self.forecast_tomorrow2: dict[str, dict[str, DataFrame]] = {}
-
-        self.observation: dict[str, dict[str, DataFrame]] = {}
-
-        self.mosmix = DataFrame()
-        self.icon = DataFrame()
-        self.icon_eu = DataFrame()
+        self.df_mosmix = DataFrame()
+        self.df_icon = DataFrame()
+        self.df_icon_eu = DataFrame()
+        self.combined_df = DataFrame()
 
 
-    def load_new_dataset(self):
-        self.get_weather_data()
-        plot_forecast_datasets(self.sorted_forecast_dict)
-
-
-    def get_weather_data(self):  # -> dict[dict[str, DataFrame]]:
-        if FORECAST_FROM_FILE:
-            for day in ["tonight", "tomorrow", "tomorrow2"]:
-                for param in PARAMS_MOSMIX:
-                    dict_df = read_mixed_df_from_file(f"{day}/{param}")
-                    self.sorted_forecast_dict[param] = dict_df
-            self.forecast_tonight = self.sorted_forecast_dict["tonight"]
-            self.forecast_tomorrow = self.sorted_forecast_dict["tomorrow"]
-            self.forecast_tomorrow2 = self.sorted_forecast_dict["tomorrow2"]
-        else:
-            self.fetch_new_forecast_data()
-            self.sort_forecasts()
-            # self.fetch_and_sort_observations()
-
-
-    def fetch_new_forecast_data(self) -> None:
+    def get_weather_data(self) -> None:  # -> dict[dict[str^, DataFrame]]:
         """
-        It calls three different methods from Fetcher class to fetch forecast data from different datamodels
-        and assigns the results to different attributes (mosmix, icon, icon_eu) of the class instance.
+        function set to handle dataflow
+        """
+        print_function_header(_filename, "get_weather_data") if DEBUG_DATA_HANDLER else None
+
+        # reset the combined_df
+        self.combined_df = DataFrame()
+        self._fetch_new_data()
+        self._clean_data()
+        self._sort_data()
+        self._create_dataplots()
+
+
+    def _fetch_new_data(self) -> None:
+        """
+        Fetches new forecast data from different datamodels and assigns the results to different
+        attributes (df_mosmix, df_icon, df_icon_eu) of the class instance.
         :return: None
         """
+        print_function_header(_filename, "_fetch_new_data")
 
-        # dataframe with columns ['station_id', 'dataset', 'parameter', 'date', 'value', 'quality']
-        self.mosmix = self.fetcher.get_mosmix_forecast()
-        self.icon = self.fetcher.get_icon_forecast()
-        self.icon_eu = self.fetcher.get_icon_eu_forecast()
+        if not FORECAST_FROM_FILE:
+            for (df, name) in zip([self.df_mosmix, self.df_icon, self.df_icon_eu],
+                                  ["mosmix", "icon", "icon_eu"]):
+                df = self.fetcher.get_mosmix_forecast()
+                save_pd_as_json(name, df)
 
-
-    def sort_forecasts(self) -> dict[str, dict[str, DataFrame]]:
-        self.fetch_and_sort_forecasts()
-
-
-    def fetch_and_sort_forecasts(self) -> dict[str, dict[str, DataFrame]]:
-        # TODO: KEEP SEQUENCE Mosmix - Icon - Icon EU
-        # Fetch the forecast
-        # mosmix = self.fetcher.get_mosmix_forecast()
-        # icon = self.fetcher.get_icon_forecast()
-        # icon_eu = self.fetcher.get_icon_eu_forecast()
-
-        # Process forecasts
-        mosmix_forecasts = get_nights_only_as_list(self.mosmix)
-        icon_forecasts = get_nights_only_as_list(self.icon)
-        icon_eu_forecasts = get_nights_only_as_list(self.icon_eu)
-
-        # Group forecasts by parameter
-        mosmix_dfs = [group_df_per_parameter(forecast, PARAMS_MOSMIX) for forecast in mosmix_forecasts]
-        icon_dfs = [group_df_per_parameter(forecast, PARAMS_MOSMIX) for forecast in icon_forecasts]
-        icon_eu_dfs = [group_df_per_parameter(forecast, PARAMS_MOSMIX) for forecast in icon_eu_forecasts]
+        else:
+            self.df_mosmix = self.fetcher.get_mosmix_forecast()
+            self.df_icon = self.fetcher.get_icon_forecast()
+            self.df_icon_eu = self.fetcher.get_icon_eu_forecast()
 
 
-        # Sort forecasts by night
-        self.forecast_tomorrow = sort_df_per_param(PARAMS_MOSMIX, *mosmix_dfs,  name="tomorrow")
-        self.forecast_tomorrow2 = sort_df_per_param(PARAMS_MOSMIX, *icon_dfs, name="tomorrow2")
-        self.forecast_tonight = sort_df_per_param(PARAMS_MOSMIX, *icon_eu_dfs, name="tonight")
+        if DEBUG_DATA_HANDLER:
+            print("df_mosmix")
+            print(self.df_mosmix)
+            # print(f"df_icon: {self.df_icon}")
+            # print(f"df_icon_eu: {self.df_icon_eu}")
+
+
+    def _clean_data(self) -> None:
+
+        if DEBUG_DATA_HANDLER:
+            print_function_header(_filename, "_clean_data")
+            print("df_mosmix")
+            print(self.df_mosmix)
+
+        for df in [self.df_mosmix, self.df_icon, self.df_icon_eu]:
+            df = clean_dataset(df)
+            df = reformat_df_values(df)
 
 
 
+    def _sort_data(self):
+        """
+        groups dfs of different models by parameters
+        Combines all 3 datamodels to one dataframe and saves it in self.combined_df
+        """
+        if DEBUG_DATA_HANDLER:
+            print_function_header(_filename, "_sort_data")
+            print()
+            print("data before grouping/sorting")  #
+            print(self.df_mosmix)
 
-        self.sorted_forecast_dict = {
-            "tonight": self.forecast_tonight,
-            "tomorrow": self.forecast_tomorrow,
-            "tomorrow2": self.forecast_tomorrow2
-        }
-        return self.sorted_forecast_dict
 
-    def fetch_and_sort_observations(self):
-        observation = self.fetcher.get_observation()
+        for df in [self.df_mosmix, self.df_icon, self.df_icon_eu]:
+            df = df.groupby(df['parameter'], dropna=True)  #.apply(lambda x: x)
+            print(df) if DEBUG_DATA_HANDLER else None
 
-        # process (get_nights_only)
-        observation_forecasts = get_nights_only_as_list(observation)
-        observation_dfs = [group_df_per_parameter(forecast, PARAMS_OBSERVATION) for forecast in observation_forecasts]
-        self.observation = sort_df_per_param(PARAMS_OBSERVATION, *observation_dfs, name="observation")
+        if DEBUG_DATA_HANDLER:
+            print("Data after grouping")
+            print(self.df_mosmix)
+
+        self.combined_df = pd.concat([self.df_mosmix.set_index(['parameter', 'date']),
+                                      self.df_icon.set_index(['parameter', 'date']),
+                                      self.df_icon_eu.set_index(['parameter', 'date'])],
+                                     axis=1)
+
+        # Concatenate the dataframes along the columns axis
+        concatenated_df = pd.concat([self.df_mosmix,  #.set_index(['parameter', 'date']),
+                                     self.df_icon,  #.set_index(['parameter', 'date']),
+                                     self.df_icon_eu], axis=1)  #.set_index(['parameter', 'date'])],
+
+        if DEBUG_DATA_HANDLER:
+            print("combined dataframes")
+            print(concatenated_df)
+            print("columns")
+            print(concatenated_df.columns)
+
+
+        # Rename the columns to differentiate them
+        concatenated_df.columns = ['df_mosmix', 'df_icon', 'df_icon_eu']
+
+        # Reset index to make 'parameter' and 'date' regular columns
+        # concatenated_df.reset_index(inplace=True)
+
+        if DEBUG_DATA_HANDLER:
+            print("renamed columns and resetted index")
+            print(concatenated_df)
+            print("columns")
+            print(concatenated_df.columns)
+
+        # Reorder the columns if needed
+        # concatenated_df = concatenated_df[['parameter', 'date', 'df_mosmix', 'df_icon', 'df_icon_eu']]
+
+        # Now concatenated_df contains groups named by parameter,
+        # each containing one date column and three columns with values
+
+        self.combined_df = concatenated_df
+
+
+    def _create_dataplots(self):
+        print_function_header(_filename, "_create_dataplots")
+
+        cloud_data = self.combined_df.loc["cloud_cover_total"]
+        wind_speed_direction = self.combined_df.loc[("wind_speed", "wind_direction")]
+        temperature_data = self.combined_df.loc[("temperature_air_mean_200", "temperature_dew_point_mean_200")]
+        visibility_data = self.combined_df.loc["visibility_range"]
+
+        for df, name in zip([cloud_data, wind_speed_direction, temperature_data, visibility_data],
+                            ["Clouds", "Wind Speed And Direction", "Temperature and Dew Point", "Visibility"]):
+            plot_with_px(df, name)
 
 
 if __name__ == '__main__':

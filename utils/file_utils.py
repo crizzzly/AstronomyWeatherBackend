@@ -1,12 +1,25 @@
+import os
+
 from utils.constants import DEBUG_UTILS
 from exceptionhandler.exception_handler import handle_standard_exception
 
 import json
 from datetime import datetime
 import pandas as pd
+from io import StringIO
+
+from utils.debugging_outputs import print_function_header
+
+local_tz = datetime.now().astimezone().tzinfo
+
+_filename = os.path.basename(__file__)
 
 
-def save_to_file(filename: str, weather_data: pd.DataFrame):
+
+
+
+def save_pd_as_json(filename: str, weather_data: pd.DataFrame):
+    print_function_header(_filename, "save_pd_as_json")
     print(f"{datetime.now()} - saving weather data") if DEBUG_UTILS else None
 
     try:
@@ -14,15 +27,13 @@ def save_to_file(filename: str, weather_data: pd.DataFrame):
             json.dump(weather_data.to_json(), outfile)
 
     except FileNotFoundError as e:
-        handle_standard_exception("utils.py - save_to_file", e)
+        handle_standard_exception("utils.py - save_pd_as_json", e)
         print(f"error saving weather data: {e.filename}")
 
 
-def load_from_file(filename):
+def load_json_from_file(filename):
     try:
         with open(f"../json_data/{filename}.json") as json_file:
             return json.load(json_file)
     except Exception as e:
-        handle_standard_exception("utils.py - load_from_file", e)
-
-
+        handle_standard_exception("utils.py - load_json_from_file", e)

@@ -11,6 +11,7 @@ from utils.constants_weatherdata import LAT, LON
 my_tz = "Europe/Berlin"
 
 
+
 def get_sun_info_from_location(lat=LAT, lon=LON, tz=my_tz, date=datetime.now(), days=1) -> list[dict[str, datetime]]:
     """
     get local times of sunrise, sunset, dawn, dusk for the next days from astral package
