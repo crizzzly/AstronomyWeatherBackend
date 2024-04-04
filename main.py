@@ -1,4 +1,4 @@
-from weatherdata import DataHandler
+from weatherdata.data_handler import DataHandler
 
 DF_LENGTH = 78
 TEST = True
@@ -9,4 +9,5 @@ ICON_EU = "icon_eu"
 
 def main():
     data_handler = DataHandler()
-    data_handler.get_weather_data()
+    data_handler.load_new_dataset()
+#    data_handler.get_weather()

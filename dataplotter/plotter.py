@@ -2,9 +2,11 @@ import math
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+import matplotlib.dates as mdates
+import plotly.express as px
 from pandas import DataFrame
 
-from utils import TEMP_TITLE, CLOUDS_TITLE, REST_TITLE, DEBUG_PLOTTER
+from utils.constants import TEMP_TITLE, CLOUDS_TITLE, REST_TITLE, DEBUG_PLOTTER
 
 plt_style = "classic"  # seaborn-v0_8-darkgrid"
 
@@ -20,10 +22,22 @@ def plot_forecast_datasets(df: dict[str, DataFrame]):
     fig_temp = plot_datasets(TEMP_TITLE, temp)
     fig_rest = plot_datasets(REST_TITLE, rest)
 
+    plot(clouds)
+
     if DEBUG_PLOTTER:
         fig_temp.show()
         fig_clouds.show()
         fig_rest.show()
+
+
+# TODO: Write only one plot function that plots all relevant data
+def plot(name_and_df: dict[str, DataFrame]):
+    df = name_and_df[CLOUDS_TITLE]
+    timeseries = df.index.get_level_values('date')
+    fig = px.line(df, x=timeseries, y=[["mosmix_value", "icon_value", "icon_eu_value"]])
+    fig.update_traces(textposition="bottom right")
+    fig.write_html(f"{CLOUDS_TITLE}.html")
+    fig.show()
 
 
 def prepare_datasets(datasets: dict[str, DataFrame]) -> list[dict[str, DataFrame]]:
@@ -93,5 +107,10 @@ def plot_datasets(title: str, data: dict[str, DataFrame]) -> Figure:
         ax.legend(loc="lower left")
         counter += 1
 
-    plt.savefig(f"figures/{title}.png")
+    try:
+        plt.savefig(f"../figures/{title}.png")
+    except FileNotFoundError as e:
+        print("Error in plotter.py - prepare_datasets")
+        print(e.errno)
+
     return fig

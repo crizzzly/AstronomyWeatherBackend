@@ -5,7 +5,7 @@ from awb_secrets import MY_LAT, MY_LON
 LAT = MY_LAT
 LON = MY_LON
 
-DISTANCE_TO_STATION = 30.0
+DISTANCE_TO_STATION = 50.0
 DF_LENGTH = 78
 
 MOSMIX = "mosmix_forecast"

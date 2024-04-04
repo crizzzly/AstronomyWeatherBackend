@@ -1,11 +1,15 @@
+# TODO: "True" not working - prove or remove!
 FORECAST_FROM_FILE = False
 
-DEBUG_DWD_FETCHER = False
-DEBUG_PLOTTER = False
-DEBUG_SORT_DATA = False
-DEBUG_DATA_HANDLER = False
-LOCAL_TZ = "Europe/Berlin"
+DEBUG_ALL = True
 
+DEBUG_DWD_FETCHER = DEBUG_ALL or True
+DEBUG_PLOTTER = DEBUG_ALL or False
+DEBUG_SORT_DATA = DEBUG_ALL or False
+DEBUG_DATA_HANDLER = DEBUG_ALL or True
+DEBUG_UTILS = DEBUG_ALL or False
+
+LOCAL_TZ = "Europe/Berlin"
 
 
 CLOUDS_TITLE = "Clouds"
