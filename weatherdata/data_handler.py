@@ -1,9 +1,13 @@
 import os
 
-from dataplotter.plotter import plot_with_px
-from exceptionhandler.exception_handler import print_debugging_function_header, print_debugging_message
+from pandas.core.groupby import DataFrameGroupBy, GroupBy
+
+from dataplotter.plotter import plot_df_dict
+from exceptionhandler.exception_handler import print_debugging_function_header, print_debugging_message, \
+    handle_exception, print_error_message
 from utils.file_utils import save_pd_as_json  # , load_json_from_file, read_mixed_df_from_file
-from utils.dataframe_utils import reformat_df_values, data_exploration  # ,data_exploration
+from utils.dataframe_utils import reformat_df_values, explore_group_via_terminal, \
+    extract_weatherdata_from_grouped_df, print_groups_from_grouped_df
 from utils.constants import FORECAST_FROM_FILE, DEBUG_DATA_HANDLER
 from utils.dataframe_utils import clean_dataset
 from weatherdata.dwd_data_fetcher import DwdDataFetcher
@@ -11,8 +15,9 @@ from weatherdata.dwd_data_fetcher import DwdDataFetcher
 import pandas as pd
 from pandas import DataFrame
 
-
 _filename = os.path.basename(__file__)
+
+
 # TODO: replace DEBUG_ and print with exceptionhandler/logging
 
 # TODO: Reshape in functions "get/load_data", "prepare/sort_data" and "plot_data
@@ -25,9 +30,8 @@ class DataHandler:
         self.df_mosmix = DataFrame()
         self.df_icon = DataFrame()
         self.df_icon_eu = DataFrame()
-        self.combined_df = DataFrame()
         self.city = ""
-
+        self.grouped_df = DataFrameGroupBy(DataFrame())
 
     def get_weather_data(self) -> None:  # -> dict[dict[str^, DataFrame]]:
         """
@@ -35,16 +39,13 @@ class DataHandler:
         """
         print_debugging_function_header(_filename, "get_weather_data") if DEBUG_DATA_HANDLER else None
 
-        # reset the combined_df
-        self.combined_df = DataFrame()
         self._fetch_new_data()
         print_debugging_message("NEW data", self.df_mosmix.to_string(max_rows=5))
         self._clean_data()
         print_debugging_message("CLEANED data", self.df_mosmix.to_string(max_rows=5))
         self._sort_data()
         # self._create_dataplots()
-        print_debugging_message("SORTED data", str(self.combined_df)) #  .to_string(max_rows=5))
-
+        # print_debugging_message("SORTED data", str(self.grouped_df))  # .to_string(max_rows=5))
 
     def _fetch_new_data(self) -> None:
         """
@@ -69,13 +70,11 @@ class DataHandler:
             self.df_icon = self.fetcher.get_icon_forecast()
             self.df_icon_eu = self.fetcher.get_icon_eu_forecast()
 
-
         if DEBUG_DATA_HANDLER:
             print("df_mosmix")
             print(self.df_mosmix)
             # print(f"df_icon: {self.df_icon}")
             # print(f"df_icon_eu: {self.df_icon_eu}")
-
 
     def _clean_data(self) -> None:
         if DEBUG_DATA_HANDLER:
@@ -83,71 +82,80 @@ class DataHandler:
             print("df_mosmix")
             print(self.df_mosmix)
 
-        for df in [self.df_mosmix, self.df_icon, self.df_icon_eu]:
-            df = clean_dataset(df)
-            df = reformat_df_values(df)
+        self.df_mosmix = clean_dataset(self.df_mosmix)
+        self.df_icon = clean_dataset(self.df_icon)
+        self.df_icon_eu = clean_dataset(self.df_icon_eu)
 
-
+        self.df_mosmix = reformat_df_values(self.df_mosmix)
+        self.df_icon = reformat_df_values(self.df_icon)
+        self.df_icon_eu = reformat_df_values(self.df_icon_eu)
 
     def _sort_data(self):
         """
         groups dfs of different models by parameters
-        Combines all 3 datamodels to one dataframe and saves it in self.combined_df
+        Combines all 3 datamodels to one dataframe and saves it in self.grouped_df
         """
         if DEBUG_DATA_HANDLER:
             print_debugging_function_header(_filename, "_sort_data")
             print()
-            print("data before grouping/sorting")  #
-            data_exploration(self.df_mosmix)
+            print("______________________data before grouping/sorting ______________________")  #
+            explore_group_via_terminal(self.df_mosmix)
+            print(self.df_mosmix['parameter'].unique())
 
-        self.combined_df = pd.concat([self.df_mosmix.set_index(['parameter', 'date']),
-                                      self.df_icon.set_index(['parameter', 'date']),
-                                      self.df_icon_eu.set_index(['parameter', 'date'])],
-                                     axis=1)
-        self.combined_df.columns = ['Mosmix', 'Icon', 'Icon EU']
-        self.combined_df.reset_index(inplace=True)
-        print(self.combined_df.columns)
-        print(self.combined_df.index)
-
-        self.combined_df = self.combined_df.groupby(
-            self.combined_df['parameter'],
-            dropna=True,
-            as_index=True
-        )
+        combined = pd.concat([self.df_mosmix.set_index(['parameter', 'date']),
+                              self.df_icon.set_index(['parameter', 'date']),
+                              self.df_icon_eu.set_index(['parameter', 'date'])],
+                             axis=1)
+        combined.columns = ['Mosmix', 'Icon', 'Icon EU']
 
         if DEBUG_DATA_HANDLER:
-            print("Combined datasets")
-            data_exploration(self.combined_df)
+            print("================= CONCAT =================")
+            print(combined.columns)
+            print(combined.index)
+
+        try:
+            self.grouped_df = combined.groupby(
+                level='parameter',  # Group by 'parameter' index
+                axis=0,  # Specify grouping along rows
+                dropna=True
+            )
+            print(f"type(self.grouped_df): {type(self.grouped_df)}")
+        except Exception as e:
+            print_error_message("Error in _sort_data", "Creating a group did not do well")
+            handle_exception(_filename, e)
+
+
+        if DEBUG_DATA_HANDLER:
+            print("____________________________ self.grouped_df ____________________________ ")
+            print(f"type in data_handler: {type(self.grouped_df)}")
+            print_groups_from_grouped_df(self.grouped_df)
+            explore_group_via_terminal(self.grouped_df)
 
         # TODO: Prove once more - saw no differences between previous versions of combined_df
         # Rename the columns to differentiate them
-        self.combined_df.columns = ['Mosmix', 'Icon', 'Icon EU']
         if DEBUG_DATA_HANDLER:
-            print("renamed columns")
-            data_exploration(self.combined_df)
+            print("____________________________ renaming columns ____________________________")
+            print_groups_from_grouped_df(self.grouped_df)
+        self.grouped_df.columns = ['Mosmix', 'Icon', 'Icon EU']
+        if DEBUG_DATA_HANDLER:
+            print("____________________________ renamed columns ____________________________")
+            print_groups_from_grouped_df(self.grouped_df)
+            # explore_group_via_terminal(self.grouped_df)
 
         # Reorder the columns if needed
-        self.combined_df = self.combined_df[['parameter', 'date', 'Mosmix', 'Icon', 'Icon EU']]
+        # self.grouped_df = self.grouped_df[['parameter', 'date', 'Mosmix', 'Icon', 'Icon EU']]
 
-        print("reordered columns")
-        data_exploration(self.combined_df)
+        print("____________________________ reordered columns ____________________________")
+        explore_group_via_terminal(self.grouped_df)
         # Now self.df_mosmix contains groups named by parameter,
         # each containing one date column and three columns with values
 
-        # self.combined_df = self.df_mosmix
-
+        # self.grouped_df = self.df_mosmix
 
     def _create_dataplots(self):
-        print_debugging_function_header(_filename, "_create_dataplots")  if DEBUG_DATA_HANDLER else None
-
-        cloud_data = self.combined_df.loc["cloud_cover_total"]
-        wind_speed_direction = self.combined_df.loc[("wind_speed", "wind_direction")]
-        temperature_data = self.combined_df.loc[("temperature_air_mean_200", "temperature_dew_point_mean_200")]
-        visibility_data = self.combined_df.loc["visibility_range"]
-
-        for df, name in zip([cloud_data, wind_speed_direction, temperature_data, visibility_data],
-                            ["Clouds", "Wind Speed And Direction", "Temperature and Dew Point", "Visibility"]):
-            plot_with_px(df, name, self.city)
+        print_debugging_function_header(_filename, "_create_dataplots") if DEBUG_DATA_HANDLER else None
+        df_dict = extract_weatherdata_from_grouped_df(self.grouped_df)
+        plot_df_dict(df_dict, self.city)
 
 
 if __name__ == '__main__':

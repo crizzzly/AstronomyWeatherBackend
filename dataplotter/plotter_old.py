@@ -21,7 +21,7 @@ plt_style = "classic"  # seaborn-v0_8-darkgrid"
 #     fig_temp = plot_dataset(TEMP_TITLE, temp)
 #     fig_rest = plot_dataset(REST_TITLE, rest)
 #
-#     plot_with_px(clouds)
+#     _plot_with_px(clouds)
 #
 #     if DEBUG_PLOTTER:
 #         fig_temp.show()

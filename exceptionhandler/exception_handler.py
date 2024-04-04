@@ -27,3 +27,7 @@ def print_debugging_function_header(filename: str, function_name: str, message: 
 
 def print_debugging_message(tag: str, msg: str = None):
     logger.debug(f"{datetime.now()} - {tag}: {msg}")
+
+
+def print_error_message(tag: str, msg: str = None):
+    logger.exception(f"{datetime.now()} - {tag}: {msg}")

@@ -1,27 +1,92 @@
 import os
 from datetime import datetime
-from io import StringIO
-
 import pandas as pd
 from pandas import DataFrame
 from pandas.core.groupby.generic import DataFrameGroupBy
 
-from exceptionhandler.exception_handler import handle_exception, print_debugging_function_header, \
-    print_debugging_message
-from utils.constants import DEBUG_DF_UTILS, DEBUG_UTILS
-from utils.file_utils import load_json_from_file
+from exceptionhandler.exception_handler import print_debugging_function_header, print_debugging_message, \
+    handle_exception
+from utils.constants import DEBUG_DF_UTILS
+
 
 _filename = os.path.basename(__file__)
 local_tz = datetime.now().astimezone().tzinfo
 
 
-def data_exploration(df: DataFrame|DataFrameGroupBy) -> None:
+def extract_weatherdata_from_grouped_df(grouped_df: DataFrameGroupBy) -> dict[str, DataFrame]:
+    """
+    takes a grouped DataFrame as input and extracts specific weather data from it,
+    such as cloud coverage, wind speed, wind direction, temperature, dew point, and visibility range.
+    It then returns a dictionary containing the extracted data,
+    with the weather data type as the key and the corresponding DataFrame as the value.
+    :rtype: object
+    :param grouped_df: DataFrameGroupBy
+    :return: dictionary containing the extracted weather data ["value_name", value_df]
+    """
+    cloud_data = grouped_df.get_group("cloud_cover_total")
+    wind_speed = grouped_df.get_group("wind_speed")
+    wind_direction = grouped_df.get_group("wind_direction")
+    temp = grouped_df.get_group("temperature_air_mean_200")
+    dew_point = grouped_df.get_group("temperature_dew_point_mean_200")
+    visibility = grouped_df.get_group("visibility_range")
+
+    df_dict = {}
+
+    name_list_beautified = ["Cloud Coverage", "Wind Speed", "Wind Direction", "Temperature", "Dew Point", "Visibility Range"]
+    name_list = ["cloud_cover_total", "wind_speed", "wind_direction", "temperature_air_mean_200",
+                 "temperature_dew_point_mean_200", "visibility_range"]
+    for df, name, name_beauty in zip(
+            [cloud_data, wind_speed, wind_direction, temp, dew_point, visibility],
+            name_list,
+            name_list_beautified):
+
+        df_dict[name_beauty] = df
+
+    return df_dict
+
+
+def explore_dataframe_via_terminal(df: DataFrame):
     """
     A function for exploring the data in the given DataFrame.
     Takes a DataFrame as input and does not return anything.
     """
 
-    print_debugging_function_header(_filename, "data_exploration")
+    print_debugging_function_header(_filename, "explore_dataframe_via_terminal")
+    print("-------------------- shape -------------------- ")
+    print(df.shape)
+    print("-------------------- index -------------------- ")
+    print(df.index)
+    print("-------------------- columns -------------------- ")
+    print(df.columns)
+    print("-------------------- head -------------------- ")
+    print(df.head(10))
+    print("-------------------- describe -------------------- ")
+    print(df.describe())
+
+
+def print_groups_from_grouped_df(grouped_df: DataFrameGroupBy):#
+    print_debugging_function_header(_filename, "print_groups_from_grouped_df")
+    print(f"type(df): {type(grouped_df)}")
+    print(f"df.dtypes: {grouped_df.dtypes}")
+
+    if type(grouped_df) is DataFrameGroupBy:
+        # print("-------------------- groups -------------------- ")
+        # print(grouped_df.groups)
+        print("-------------------- count -------------------- ")
+        print(grouped_df.count())
+    else:
+        msg = "Error in print_groups_from_grouped_df: df is not DataFrameGroupBy!\n"
+        msg += f"Type is: {type(grouped_df)}"
+        handle_exception(f"{_filename} - print_groups_from_grouped_df", grouped_df)
+
+
+def explore_group_via_terminal(df: DataFrame | DataFrameGroupBy) -> None:
+    """
+    A function for exploring the data in the given DataFrame.
+    Takes a DataFrame as input and does not return anything.
+    """
+
+    print_debugging_function_header(_filename, "explore_group_via_terminal")
     print("-------------------- head -------------------- ")
     print(df.head(10))
     # print("-------------------- describe -------------------- ")
@@ -98,19 +163,4 @@ def reformat_df_values(df: DataFrame) -> DataFrame:
     df['date'] = pd.to_datetime(df['date'], utc=True)
     df['date'] = df['date'].dt.tz_convert("Europe/Berlin")
 
-    return df
-
-
-def read_mixed_df_from_file(filename):
-    if DEBUG_UTILS:
-        print_debugging_function_header(_filename, "read_mixed_df_from_file")
-    try:
-        df = pd.read_json(StringIO(load_json_from_file(filename)))
-    except Exception as e:
-        print_debugging_function_header(_filename, "read_mixed_df_from_file")
-        handle_exception("Data_handler.py read_mixed_df_from_file", e)
-        df = DataFrame()
-    else:
-        df["date"] = pd.to_datetime(df["date"], unit="s")
-        df["date"] = df["date"].dt.tz_localize("UTC").dt.tz_convert(local_tz)
     return df
