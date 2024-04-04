@@ -6,7 +6,9 @@ import os
 import plotly.express as px
 from pandas import DataFrame
 
-from utils.dataframe_utils import explore_dataframe_via_terminal
+from exceptionhandler.exception_handler import print_function_info, print_info_message
+from utils.constants import DEBUG_PLOTTER
+from utils.data_exploration import explore_dataframe
 
 _filename = os.path.basename(__file__)
 
@@ -19,16 +21,25 @@ plt_style = "classic"  # seaborn-v0_8-darkgrid"
 
 
 def plot_df_dict(df_dict: dict[str, DataFrame], city: str):
-
     df = df_dict["Cloud Coverage"]
-    df.reset_index(inplace=True)
     _plot_with_px(df, "Cloud Coverage", city)
 
 
 def _plot_with_px(df: DataFrame, value_name:str, city: str):
-    print("----------------------------- Plotting -----------------------------")
-    explore_dataframe_via_terminal(df)
-    timeseries = df.index.get_level_values('date')
+    print_function_info(_filename, "_plot_with_px")  if DEBUG_PLOTTER else None
+
+    explore_dataframe(df) if DEBUG_PLOTTER else None
+
+    if DEBUG_PLOTTER:
+        print_info_message(f"df.columns:\n {df.columns}")
+        print_info_message((f"df.index:\n {df.index}"))
+
+    try:
+        timeseries = df.loc["date"]  # .index.get_level_values('date')
+    except Exception as e:
+        print(e)
+        # try:
+            # timeseries = df.inde
     fig = px.line(df, x=timeseries, y=[["mosmix_value", "icon_value", "icon_eu_value"]])
     fig.update_layout(title=f"{city} - {value_name}")
     fig.update_traces(textposition="bottom right")

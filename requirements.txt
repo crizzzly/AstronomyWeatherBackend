@@ -2,14 +2,15 @@ wetterdienst==0.79.0
 polars==0.20.18
 Flask==3.0.2
 astral~=3.2
-matplotlib==3.8.3
+matplotlib==3.8.4
 pytest==8.1.1
 xarray==2024.3.0
 numpy==1.26.4
-bigtree==0.16.4
+bigtree==0.17.0
 wradlib~=2.0.3
 pandas==2.2.1
 tzlocal==5.2
 pytz==2024.1
 plotly==5.20.0
 python-dateutil==2.9.0.post0
+colorama~=0.4.6
