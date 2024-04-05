@@ -62,6 +62,6 @@ def reformat_df_values(df: DataFrame) -> DataFrame:
         print_debug_message("")
 
     df['date'] = pd.to_datetime(df['date'], utc=True)
+    # TODO: Maybe convert right before displaying data - else may cause probs with calculations
     df['date'] = df['date'].dt.tz_convert("Europe/Berlin")
-
     return df

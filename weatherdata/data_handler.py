@@ -4,7 +4,7 @@ import pandas as pd
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
 
-from exceptionhandler.exception_handler import print_function_info
+from exceptionhandler.exception_handler import print_function_info, print_debug_message, print_info_message
 from dataplotter.plotter import plot_grouped_df
 from utils.constants import FORECAST_FROM_FILE, DEBUG_DATA_HANDLER
 from utils.dataframe_utils import reformat_df_values, clean_dataset
@@ -14,9 +14,6 @@ from weatherdata.dwd_data_fetcher import DwdDataFetcher
 
 
 _filename = os.path.basename(__file__)
-
-
-# TODO: replace DEBUG_ and print with exceptionhandler/logging
 
 
 class DataHandler:
@@ -29,7 +26,7 @@ class DataHandler:
         self.grouped_df = DataFrameGroupBy(DataFrame())
 
 
-    def get_weather_data(self) -> None:  # -> dict[dict[str^, DataFrame]]:
+    def get_weather_data(self) -> None:
         """
         function set to handle dataflow
         """
@@ -64,16 +61,15 @@ class DataHandler:
             self.df_icon_eu = self.fetcher.get_icon_eu_forecast()
 
         if DEBUG_DATA_HANDLER:
-            print("df_mosmix")
-            print(self.df_mosmix)
-            # print(f"df_icon: {self.df_icon}")
-            # print(f"df_icon_eu: {self.df_icon_eu}")
+            print_debug_message(f"{_filename} - _fetch_new_data\n"
+                                f"df_mosmix: {self.df_mosmix}")
+
 
     def _clean_data(self) -> None:
         if DEBUG_DATA_HANDLER:
             print_function_info(_filename, "_clean_data")
-            print("df_mosmix")
-            print(self.df_mosmix)
+            print_debug_message(f"{_filename} - _clean_data\n"
+                                f"df_mosmix: {self.df_mosmix}")
 
         self.df_mosmix = clean_dataset(self.df_mosmix)
         self.df_icon = clean_dataset(self.df_icon)
@@ -90,10 +86,8 @@ class DataHandler:
         """
         if DEBUG_DATA_HANDLER:
             print_function_info(_filename, "_sort_data")
-            print()
-            print("______________________data before grouping/sorting ______________________")  #
-            print("params")
-            print(self.df_mosmix['parameter'].unique())
+            print_info_message("_________________ data before grouping/sorting _________________", "")
+            print_debug_message("params", self.df_mosmix['parameter'].unique())
 
         combined = pd.concat([self.df_mosmix.set_index(['parameter', 'date']),
                               self.df_icon.set_index(['parameter', 'date']),
@@ -129,7 +123,6 @@ class DataHandler:
 
     def _create_dataplots(self):
         print_function_info(_filename, "_create_dataplots") if DEBUG_DATA_HANDLER else None
-        # df_dict = extract_group_members(self.grouped_df)
         plot_grouped_df(self.grouped_df, self.city)
 
 
