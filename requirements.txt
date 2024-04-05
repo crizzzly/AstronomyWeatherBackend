@@ -1,4 +1,4 @@
-wetterdienst==0.79.0
+wetterdienst==0.78.0
 polars==0.20.18
 Flask==3.0.2
 astral~=3.2

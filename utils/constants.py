@@ -1,5 +1,5 @@
-# TODO: "True" not working - prove or remove!
-FORECAST_FROM_FILE = False
+FORECAST_FROM_FILE = True
+FORECAST_TIME_HRS = 48
 
 DEBUG_ALL = False
 
@@ -11,7 +11,3 @@ DEBUG_DF_UTILS = DEBUG_ALL or False
 
 LOCAL_TZ = "Europe/Berlin"
 
-# TODO: REMOVE
-CLOUDS_TITLE = "Clouds"
-TEMP_TITLE = "Temperature"
-REST_TITLE = "WindVisibility"

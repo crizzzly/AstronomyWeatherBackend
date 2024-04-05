@@ -4,7 +4,7 @@ import os
 from utils.constants import DEBUG_DWD_FETCHER
 from utils.constants_weatherdata import PARAMS_OBSERVATION, PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION
 from exceptionhandler.exception_handler import print_exception, print_function_info, \
-    print_debugging_message
+    print_debug_message
 
 from datetime import datetime
 from pprint import pprint
@@ -18,6 +18,9 @@ from wetterdienst.provider.dwd.observation import DwdObservationRequest, DwdObse
 
 # from wetterdienst.provider.dwd.observation.util.parameter. import DwdObservationTime
 # from wetterdienst.provider.dwd.observation.values import DwdObservationValue
+
+# TODO: MapWithoutReturnDtypeWarning: Calling `map_elements` without specifying `return_dtype` can lead to unpredictable results. Specify `return_dtype` to silence this warning.
+#   df = df.with_columns(
 
 _filename = os.path.basename(__file__)
 
@@ -37,7 +40,7 @@ def _get_data_from_closest_station(stations, lat, lon) -> dict[str, pd.DataFrame
     """
     if DEBUG_DWD_FETCHER:
         print_function_info(_filename, "_get_data_from_closest_station")
-        print_debugging_message(stations)
+        print_debug_message(stations)
 
     closest_stations = stations.all().stations.filter_by_distance(
         latlon=(lat, lon),
@@ -45,9 +48,9 @@ def _get_data_from_closest_station(stations, lat, lon) -> dict[str, pd.DataFrame
         unit="km"
     )
     if DEBUG_DWD_FETCHER:
-        print_debugging_message(f"closest stations:")
+        print_debug_message(f"closest stations:")
         pprint(closest_stations)
-        print_debugging_message(f"closest stations values:")
+        print_debug_message(f"closest stations values:")
         pprint(closest_stations.parameter)
 
     first_station_id = closest_stations.df.row(0)[0]
@@ -64,14 +67,14 @@ def _get_data_from_closest_station(stations, lat, lon) -> dict[str, pd.DataFrame
 
     if DEBUG_DWD_FETCHER:
         print_function_info(_filename, "_get_data_from_closest_station")
-        print_debugging_message("\n\n")
-        print_debugging_message("first station.type", type(values1))
-        print_debugging_message("first station.value", values1)
-        print_debugging_message("first:", city1[0])
+        print_debug_message("\n\n")
+        print_debug_message("first station.type", type(values1))
+        print_debug_message("first station.value", values1)
+        print_debug_message("first:", city1[0])
         pprint(first_station)
-        print_debugging_message("second station.type", type(values2))
-        print_debugging_message("second station.value", values2)
-        print_debugging_message("second:", city2[0])
+        print_debug_message("second station.type", type(values2))
+        print_debug_message("second station.value", values2)
+        print_debug_message("second:", city2[0])
         pprint(second_station)
 
 
@@ -90,8 +93,8 @@ def _get_data_from_closest_station(stations, lat, lon) -> dict[str, pd.DataFrame
 def _get_observation_data_from_best_station(stations: DwdObservationRequest, lat, lon) -> pd.DataFrame:
     if DEBUG_DWD_FETCHER:
         print_function_info(_filename, "_get_observation_data_from_best_station")
-        print_debugging_message(f"{datetime.now()} - getting closest station")
-        print_debugging_message(stations.all().df)
+        print_debug_message(f"{datetime.now()} - getting closest station")
+        print_debug_message(stations.all().df)
 
     # filter StationsResult by distance
     try:
@@ -101,10 +104,10 @@ def _get_observation_data_from_best_station(stations: DwdObservationRequest, lat
             unit="km"
         )
         if DEBUG_DWD_FETCHER:
-            print_debugging_message("dwd_data_fetcher.py - _get_observation_data_from_best_station()")
-            print_debugging_message(f"closest stations:")
+            print_debug_message("dwd_data_fetcher.py - _get_observation_data_from_best_station()")
+            print_debug_message(f"closest stations:")
             pprint(closest_stations)
-            print_debugging_message(f"closest stations values:")
+            print_debug_message(f"closest stations values:")
             pprint(closest_stations.parameter)
 
     except Exception as e:
@@ -119,13 +122,13 @@ def _get_observation_data_from_best_station(stations: DwdObservationRequest, lat
         values2 = second_station.values.all().df.to_pandas()
 
         if DEBUG_DWD_FETCHER:
-            print_debugging_message(f"\n\nfirst station.type = {type(values1)}")
-            print_debugging_message(f"first station.value = {values1}")
-            print_debugging_message("first:")
+            print_debug_message(f"\n\nfirst station.type = {type(values1)}")
+            print_debug_message(f"first station.value = {values1}")
+            print_debug_message("first:")
             pprint(first_station)
-            print_debugging_message(f"second station.type = {type(values2)}")
-            print_debugging_message(f"second station.value = {values2}")
-            print_debugging_message("second:")
+            print_debug_message(f"second station.type = {type(values2)}")
+            print_debug_message(f"second station.value = {values2}")
+            print_debug_message("second:")
             pprint(second_station)
         return values1
 
@@ -161,12 +164,12 @@ class DwdDataFetcher:
 
         self.icon_stations = DwdDmoRequest(
             parameter=self.icon_params,
-            # station_group="single_stations",
+            station_group="single_stations",
             dmo_type=DwdDmoType.ICON,
         )
         self.icon_eu_stations = DwdDmoRequest(
             parameter=self.icon_params,
-            # station_group="single_stations",
+            station_group="single_stations",
             dmo_type=DwdDmoType.ICON_EU,
         )
 

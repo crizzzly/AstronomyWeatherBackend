@@ -4,10 +4,10 @@ import pandas as pd
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
 
-from exceptionhandler.exception_handler import print_function_info, print_debugging_message
-from dataplotter.plotter import plot_df_dict
+from exceptionhandler.exception_handler import print_function_info
+from dataplotter.plotter import plot_grouped_df
 from utils.constants import FORECAST_FROM_FILE, DEBUG_DATA_HANDLER
-from utils.dataframe_utils import reformat_df_values, extract_dfs_from_group, clean_dataset
+from utils.dataframe_utils import reformat_df_values, clean_dataset
 from utils.data_exploration import debug_dataset
 from utils.file_utils import save_pd_as_json
 from weatherdata.dwd_data_fetcher import DwdDataFetcher
@@ -36,12 +36,9 @@ class DataHandler:
         print_function_info(_filename, "get_weather_data") if DEBUG_DATA_HANDLER else None
 
         self._fetch_new_data()
-        print_debugging_message("NEW data", self.df_mosmix.to_string(max_rows=5))
         self._clean_data()
-        print_debugging_message("CLEANED data", self.df_mosmix.to_string(max_rows=5))
         self._sort_data()
         self._create_dataplots()
-        # print_debugging_message("SORTED data", str(self.grouped_df))  # .to_string(max_rows=5))
 
     def _fetch_new_data(self) -> None:
         """
@@ -132,8 +129,8 @@ class DataHandler:
 
     def _create_dataplots(self):
         print_function_info(_filename, "_create_dataplots") if DEBUG_DATA_HANDLER else None
-        df_dict = extract_dfs_from_group(self.grouped_df)
-        plot_df_dict(df_dict, self.city)
+        # df_dict = extract_group_members(self.grouped_df)
+        plot_grouped_df(self.grouped_df, self.city)
 
 
 if __name__ == '__main__':

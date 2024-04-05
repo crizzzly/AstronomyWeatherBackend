@@ -11,6 +11,12 @@ ICON = "icon_forecast"
 ICON_EU = "icon_eu_forecast"
 OBSERVATION = "observation_current"
 
+PARAMS_BEAUTIFIED = ["Cloud Coverage", "Wind Speed", "Wind Direction",
+                     "Temperature", "Dew Point", "Visibility Range"]
+FORECAST_PARAMS = ["cloud_cover_total", "wind_speed", "wind_direction",
+"temperature_air_mean_200", "temperature_dew_point_mean_200", "visibility_range"]
+
+
 PARAMS_MOSMIX = [
     'cloud_cover_above_7_km',
     'cloud_cover_below_1000_ft',
