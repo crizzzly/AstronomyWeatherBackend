@@ -28,13 +28,6 @@ plt_style = "classic"  # seaborn-v0_8-darkgrid"
 #         fig_clouds.show()
 #         fig_rest.show()
 
-# TODO: Write only one plot function that plots all relevant data
-def plot_with_px(df: DataFrame, name: str):
-    timeseries = df.index.get_level_values('date')
-    fig = px.line(df, x=timeseries, y=[["mosmix_value", "icon_value", "icon_eu_value"]])
-    fig.update_traces(textposition="bottom right")
-    fig.write_html(f"{name}.html")
-    fig.show()
 
 
 def prepare_datasets(datasets: dict[str, DataFrame]) -> list[dict[str, DataFrame]]:

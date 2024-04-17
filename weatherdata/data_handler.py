@@ -22,8 +22,13 @@ class DataHandler:
         self.df_mosmix = DataFrame()
         self.df_icon = DataFrame()
         self.df_icon_eu = DataFrame()
+        # TODO: Check why city name isn't saved
         self.city = ""
         self.grouped_df = DataFrameGroupBy(DataFrame())
+
+        # that's why:
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+        pd.options.mode.copy_on_write = True
 
 
     def get_weather_data(self) -> None:
@@ -71,6 +76,12 @@ class DataHandler:
             print_debug_message(f"{_filename} - _clean_data\n"
                                 f"df_mosmix: {self.df_mosmix}")
 
+        # self.df_mosmix = self.df_mosmix.dropna()
+        # self.df_icon = self.df_icon.dropna()
+        # self.df_icon_eu = self.df_icon_eu.dropna()
+
+        self.city = self.fetcher.city
+
         self.df_mosmix = clean_dataset(self.df_mosmix)
         self.df_icon = clean_dataset(self.df_icon)
         self.df_icon_eu = clean_dataset(self.df_icon_eu)
@@ -84,8 +95,8 @@ class DataHandler:
         groups dfs of different models by parameters
         Combines all 3 datamodels to one dataframe and saves it in self.grouped_df
         """
+        print_function_info(_filename, "_sort_data") if DEBUG_DATA_HANDLER else None
         if DEBUG_DATA_HANDLER:
-            print_function_info(_filename, "_sort_data")
             print_info_message("_________________ data before grouping/sorting _________________", "")
             print_debug_message("params", self.df_mosmix['parameter'].unique())
 
@@ -101,8 +112,10 @@ class DataHandler:
         self.grouped_df = combined.groupby(
             level='parameter',  # Group by 'parameter' index
             # axis=0,  # Specify grouping along rows
-            dropna=True
+            dropna=True,
+            # sort=False,
         )
+
 
         action = "\n=========================== self.grouped_df =========================== \n"
         debug_dataset(action, self.grouped_df) if DEBUG_DATA_HANDLER else None
@@ -122,7 +135,7 @@ class DataHandler:
         # self.grouped_df = self.df_mosmix
 
     def _create_dataplots(self):
-        print_function_info(_filename, "_create_dataplots") if DEBUG_DATA_HANDLER else None
+        print_function_info(_filename, "_create_dataplots")  # if DEBUG_DATA_HANDLER else None
         plot_grouped_df(self.grouped_df, self.city)
 
 

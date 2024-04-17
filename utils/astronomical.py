@@ -11,6 +11,9 @@ from utils.constants_weatherdata import LAT, LON
 my_tz = "Europe/Berlin"
 
 
+def add_timedelta_to_current_time(hours: float) -> datetime:
+    return datetime.now(tz=pytz.timezone(my_tz)) + timedelta(hours=hours)
+
 
 def get_sun_info_from_location(lat=LAT, lon=LON, tz=my_tz, date=datetime.now(), days=1) -> list[dict[str, datetime]]:
     """

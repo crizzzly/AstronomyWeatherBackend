@@ -4,7 +4,8 @@ from pandas import DataFrame
 from datetime import datetime
 
 from exceptionhandler.exception_handler import print_function_info, print_debug_message
-from utils.constants import DEBUG_DF_UTILS
+from utils.astronomical import add_timedelta_to_current_time
+from utils.constants import DEBUG_DF_UTILS, FORECAST_DURATION_HRS
 
 _filename = os.path.basename(__file__)
 local_tz = datetime.now().astimezone().tzinfo
@@ -31,14 +32,14 @@ def clean_dataset(df: DataFrame) -> DataFrame:
         print_debug_message(f"dataset")
         print_debug_message(df.to_string(max_rows=5, show_dimensions=True, min_rows=df.columns.size))
 
-    name = df['station_id'][0]
-    print(name)
-
     df.drop(['quality', 'dataset', 'station_id'], axis=1, inplace=True)  # , 'station_id'
     df.dropna(inplace=True)
 
+    date_max = add_timedelta_to_current_time(hours=FORECAST_DURATION_HRS)
+    df = df.query('@df["date"] < @date_max')
+
     if DEBUG_DF_UTILS:
-        print_debug_message("datatypes before cleaning")
+        print_debug_message("datatypes after cleaning")
         print_debug_message(str(df.dtypes))
 
     return df
@@ -62,6 +63,9 @@ def reformat_df_values(df: DataFrame) -> DataFrame:
         print_debug_message("")
 
     df['date'] = pd.to_datetime(df['date'], utc=True)
+
+    # sort ascending
+    df = df.sort_values(by='date', ascending=True)
     # TODO: Maybe convert right before displaying data - else may cause probs with calculations
     df['date'] = df['date'].dt.tz_convert("Europe/Berlin")
     return df
