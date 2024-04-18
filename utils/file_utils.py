@@ -15,7 +15,7 @@ _filename = os.path.basename(__file__)
 
 
 def save_pd_as_json(filename: str, weather_data: pd.DataFrame):
-    print_function_info(_filename, "save_pd_as_json")
+    print_function_info(_filename, "save_pd_as_json") if DEBUG_UTILS else None
     print(f"{datetime.now()} - saving weather data") if DEBUG_UTILS else None
 
     try:

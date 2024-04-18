@@ -1,4 +1,4 @@
-FORECAST_FROM_FILE = False
+FORECAST_FROM_FILE = True
 
 # TODO: Let this be handled by settings page
 FORECAST_DURATION_HRS = float(48.0)

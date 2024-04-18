@@ -60,12 +60,12 @@ class DwdDataFetcher:
 
 
     def get_icon_forecast(self, lat=LAT, lon=LON):
-        print_function_info(_filename, "getting df_icon forecast")  # if DEBUG_DWD_FETCHER else None
+        print_function_info(_filename, "getting df_icon forecast") if DEBUG_DWD_FETCHER else None
         return self._get_data_from_closest_station(self.icon_stations, lat, lon)
 
 
     def get_icon_eu_forecast(self, lat=LAT, lon=LON):
-        print_function_info(_filename, "getting icon_eu forecast")  #  if DEBUG_DWD_FETCHER else None
+        print_function_info(_filename, "getting icon_eu forecast")  if DEBUG_DWD_FETCHER else None
 
         return self._get_data_from_closest_station(self.icon_eu_stations, lat, lon)
 

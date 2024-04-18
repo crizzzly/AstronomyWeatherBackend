@@ -50,7 +50,6 @@ def _plot_with_px(df: DataFrame, value_name: str, city: str):
 
     df = df.sort_index(ascending=True)  # , inplace=True
     df = df.fillna(999.9)
-    print_debug_message(f"{_filename} - _plot_with_px - df.isna?", df.isna().any())
 
     fig = px.line(df, x=timeseries, y=["Mosmix", "Icon", "Icon EU"])
     fig.update_layout(title=f"{city} - {value_name}")
@@ -58,7 +57,7 @@ def _plot_with_px(df: DataFrame, value_name: str, city: str):
 
     # save figure as html
     try:
-        fig.write_html(f"figures/{city}-{value_name}.html")
+        fig.write_html(f"templates/{city}-{value_name}.html")
         # fig.write_html("/")
     except IOError as e:
         print_exception(f"{_filename} - _plot_with_px", e)

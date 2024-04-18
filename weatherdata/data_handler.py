@@ -135,7 +135,7 @@ class DataHandler:
         # self.grouped_df = self.df_mosmix
 
     def _create_dataplots(self):
-        print_function_info(_filename, "_create_dataplots")  # if DEBUG_DATA_HANDLER else None
+        print_function_info(_filename, "_create_dataplots") if DEBUG_DATA_HANDLER else None
         plot_grouped_df(self.grouped_df, self.city)
 
 
