@@ -1,7 +1,5 @@
-from awb_secrets import MY_LAT, MY_LON
-
-LAT = MY_LAT
-LON = MY_LON
+LAT = 48.7
+LON = 9.9
 
 DISTANCE_TO_STATION = 50.0
 DF_LENGTH = 78

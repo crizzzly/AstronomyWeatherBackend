@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 import pandas as pd
 from pandas import DataFrame
 from datetime import datetime
@@ -35,7 +37,10 @@ def clean_dataset(df: DataFrame) -> DataFrame:
     df.drop(['quality', 'dataset', 'station_id'], axis=1, inplace=True)  # , 'station_id'
     df.dropna(inplace=True)
 
-    date_max = add_timedelta_to_current_time(hours=FORECAST_DURATION_HRS)
+    date_max = np.datetime64(add_timedelta_to_current_time(hours=FORECAST_DURATION_HRS))
+    date_max = pd.to_datetime(date_max, utc=True)
+    df['date'] = pd.to_datetime(df['date'], utc=True)
+
     df = df.query('@df["date"] < @date_max')
 
     if DEBUG_DF_UTILS:

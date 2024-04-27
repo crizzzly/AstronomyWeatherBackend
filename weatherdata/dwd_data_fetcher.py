@@ -9,10 +9,11 @@ from wetterdienst import Period  #, Parameter
 from wetterdienst.provider.dwd.dmo import DwdDmoType, DwdDmoRequest
 from wetterdienst.provider.dwd.mosmix import DwdMosmixRequest, DwdMosmixType
 
-from utils.constants import DEBUG_DWD_FETCHER
+from utils.constants import DEBUG_DWD_FETCHER, FORECAST_FROM_FILE
 from utils.constants_weatherdata import PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION
 from exceptionhandler.exception_handler import print_function_info, \
-    print_debug_message
+    print_debug_message, print_error_message
+from utils.file_utils import save_json_to_file, load_json_from_file
 
 # TODO: MapWithoutReturnDtypeWarning: Calling `map_elements` without specifying `return_dtype` can lead to
 #  unpredictable results. Specify `return_dtype` to silence this warning.
@@ -40,35 +41,42 @@ class DwdDataFetcher:
 
         self._init_forecast_stations()
 
-
     def _init_forecast_stations(self):
-        self.mosmix_stations = DwdMosmixRequest(
-            parameter=PARAMS_MOSMIX,
-            mosmix_type=DwdMosmixType.LARGE
-        )
+        # TODO: Catch exceptions
+        if not FORECAST_FROM_FILE:
+            self.mosmix_stations = DwdMosmixRequest(
+                parameter=PARAMS_MOSMIX,
+                mosmix_type=DwdMosmixType.LARGE
+            )
+            self.icon_stations = DwdDmoRequest(
+                parameter=PARAMS_MOSMIX,
+                station_group="single_stations",
+                dmo_type=DwdDmoType.ICON,
+            )
+            self.icon_eu_stations = DwdDmoRequest(
+                parameter=PARAMS_MOSMIX,
+                station_group="single_stations",
+                dmo_type=DwdDmoType.ICON_EU,
+            )
+            save_json_to_file("mosmix_stations", self.mosmix_stations.all().df.to_pandas())
+            save_json_to_file("icon_stations", self.icon_stations.all().df.to_pandas())
+            save_json_to_file("icon_eu_stations", self.icon_eu_stations.all().df.to_pandas())
+            
+        else:
+            self.mosmix_stations = pd.read_json(load_json_from_file("mosmix_stations"))
+            self.icon_stations = pd.read_json(load_json_from_file("icon_stations"))
+            self.icon_eu_stations = pd.read_json(load_json_from_file("icon_eu_stations"))
 
-        self.icon_stations = DwdDmoRequest(
-            parameter=PARAMS_MOSMIX,
-            station_group="single_stations",
-            dmo_type=DwdDmoType.ICON,
-        )
-        self.icon_eu_stations = DwdDmoRequest(
-            parameter=PARAMS_MOSMIX,
-            station_group="single_stations",
-            dmo_type=DwdDmoType.ICON_EU,
-        )
 
 
     def get_icon_forecast(self, lat=LAT, lon=LON):
         print_function_info(_filename, "getting df_icon forecast") if DEBUG_DWD_FETCHER else None
         return self._get_data_from_closest_station(self.icon_stations, lat, lon)
 
-
     def get_icon_eu_forecast(self, lat=LAT, lon=LON):
-        print_function_info(_filename, "getting icon_eu forecast")  if DEBUG_DWD_FETCHER else None
+        print_function_info(_filename, "getting icon_eu forecast") if DEBUG_DWD_FETCHER else None
 
         return self._get_data_from_closest_station(self.icon_eu_stations, lat, lon)
-
 
     def get_mosmix_forecast(self, lat=LAT, lon=LON):
         """
@@ -80,7 +88,6 @@ class DwdDataFetcher:
         print_function_info(_filename, "getting df_mosmix forecast") if DEBUG_DWD_FETCHER else None
 
         return self._get_data_from_closest_station(self.mosmix_stations, lat, lon)
-
 
     def _get_data_from_closest_station(self, stations, lat, lon) -> dict[str, pd.DataFrame]:
         """
@@ -104,11 +111,22 @@ class DwdDataFetcher:
             print_function_info(_filename, "_get_data_from_closest_station")
             print_debug_message(stations)
 
-        closest_stations = stations.all().stations.filter_by_distance(
-            latlon=(lat, lon),
-            distance=DISTANCE_TO_STATION,
-            unit="km"
-        )
+        i = 0
+        while True:
+            try:
+                closest_stations = stations.all().stations.filter_by_distance(
+                    latlon=(lat, lon),
+                    distance=DISTANCE_TO_STATION,
+                    unit="km"
+                )
+            except FileNotFoundError as e:
+                text = f"Download attempt {i+1} failed. \n"
+                text += "Trying again ...\n"
+
+                print_error_message(_filename, text + str(e))
+            else:
+                break
+
         if DEBUG_DWD_FETCHER:
             print_debug_message(f"closest stations:")
             pprint(closest_stations)

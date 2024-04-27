@@ -2,7 +2,10 @@ import os
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
 
@@ -19,10 +22,53 @@ plt_style = "classic"  # seaborn-v0_8-darkgrid"
 
 # TODO: replace DEBUG_ and print with exceptionhandler/logging
 
+# aliceblue, antiquewhite, aqua, aquamarine, azure,
+#             beige, bisque, black, blanchedalmond, blue,
+#             blueviolet, brown, burlywood, cadetblue,
+#             chartreuse, chocolate, coral, cornflowerblue,
+#             cornsilk, crimson, cyan, darkblue, darkcyan,
+#             darkgoldenrod, darkgray, darkgrey, darkgreen,
+#             darkkhaki, darkmagenta, darkolivegreen, darkorange,
+#             darkorchid, darkred, darksalmon, darkseagreen,
+#             darkslateblue, darkslategray, darkslategrey,
+#             darkturquoise, darkviolet, deeppink, deepskyblue,
+#             dimgray, dimgrey, dodgerblue, firebrick,
+#             floralwhite, forestgreen, fuchsia, gainsboro,
+#             ghostwhite, gold, goldenrod, gray, grey, green,
+#             greenyellow, honeydew, hotpink, indianred, indigo,
+#             ivory, khaki, lavender, lavenderblush, lawngreen,
+#             lemonchiffon, lightblue, lightcoral, lightcyan,
+#             lightgoldenrodyellow, lightgray, lightgrey,
+#             lightgreen, lightpink, lightsalmon, lightseagreen,
+#             lightskyblue, lightslategray, lightslategrey,
+#             lightsteelblue, lightyellow, lime, limegreen,
+#             linen, magenta, maroon, mediumaquamarine,
+#             mediumblue, mediumorchid, mediumpurple,
+#             mediumseagreen, mediumslateblue, mediumspringgreen,
+#             mediumturquoise, mediumvioletred, midnightblue,
+#             mintcream, mistyrose, moccasin, navajowhite, navy,
+#             oldlace, olive, olivedrab, orange, orangered,
+#             orchid, palegoldenrod, palegreen, paleturquoise,
+#             palevioletred, papayawhip, peachpuff, peru, pink,
+#             plum, powderblue, purple, red, rosybrown,
+#             royalblue, rebeccapurple, saddlebrown, salmon,
+#             sandybrown, seagreen, seashell, sienna, silver,
+#             skyblue, slateblue, slategray, slategrey, snow,
+#             springgreen, steelblue, tan, teal, thistle, tomato,
+#             turquoise, violet, wheat, white, whitesmoke,
+#             yellow, yellowgreen
+
+plot_bg = "#000033"
+paper_bg = "black"
+fg_color = "dimgray"
+
+default_tracecolors = ["#1f77b4", "#ff7f0e", "#2ca0"]
+
 
 def plot_grouped_df(group: DataFrameGroupBy, city: str):
     print_function_info(_filename, "plot_grouped_df") if DEBUG_PLOTTER else None
-    clouds_df = group.get_group("cloud_cover_total")
+    clouds_df: pd.DataFrame = group.get_group("cloud_cover_total")
+    #clouds_df.drop(index="parameter", inplace=True)
     if DEBUG_PLOTTER:
         explore_dataframe(clouds_df)
 
@@ -31,29 +77,98 @@ def plot_grouped_df(group: DataFrameGroupBy, city: str):
 
 
 def _plot_with_px(df: DataFrame, value_name: str, city: str):
+    """
+        Plots a dataframe using Plotly Express.
+
+        Args:
+            df (DataFrame): The dataframe to plot.
+            value_name (str): The name of the value column to plot.
+            city (str): The name of the city.
+
+        Returns:
+            None
+
+        """
     print_function_info(_filename, "_plot_with_px") if DEBUG_PLOTTER else None
+    df = df.dropna(axis=0)  # .fillna(method="ffill").f
+    df = df.sort_index(ascending=True)  # , inplace=True
+    timeseries = df.index.get_level_values('date')
+
+    mosmix = df["Mosmix"]
+    icon = df["Icon"]
+    icon_eu = df["Icon EU"]
     if DEBUG_PLOTTER:
         print_info_message(f"df.columns:", df.columns)
         print_info_message(f"df.index:", df.index)
+        print_debug_message("df.head()", df.head())
+        print_debug_message("df.tail()", df.tail())
 
-    timeseries = df.index.get_level_values('date')
-    if DEBUG_PLOTTER:
-        print_debug_message(
-            f"{_filename} - _plot_with_px - timeseries", timeseries) \
-            if DEBUG_PLOTTER else None
-        print_info_message("Mosmix Values", df["Mosmix"])
-        print_debug_message("Mosmix df size:", df["Mosmix"].size)
-        print_debug_message("Icon Values", df["Icon"])
-        print_debug_message("Icon df size:", df["Icon"].size)
-        print_debug_message("Icon EU Values", df["Icon EU"])
-        print_debug_message("Icon EU df size:", df["Icon EU"].size)
+        # #print_debug_message(
+        # #    f"{_filename} - _plot_with_px - timeseries", timeseries)
+        # print_info_message(f"{df.columns[0]} Values", df[df.columns[0]])
+        # print_debug_message(f"{df.columns[-1]} df size:", df[df.columns[-1]].size)
+        # print_debug_message(f"Icon Values", df.loc[df.columns[0]])
+        # print_debug_message(f"Icon df size:", df.loc[df.columns[0]].size)
+        # print_debug_message(f"Icon EU Values", df.loc[df.columns[1]])
+        # print_debug_message(f"Icon EU df size:", df.loc[df.columns[1]].size)
 
-    df = df.sort_index(ascending=True)  # , inplace=True
-    df = df.fillna(999.9)
 
-    fig = px.line(df, x=timeseries, y=["Mosmix", "Icon", "Icon EU"])
-    fig.update_layout(title=f"{city} - {value_name}")
-    fig.update_traces(textposition="bottom right")
+    text="mosmix"
+    # fig = px.line(df, x=timeseries, y=["Mosmix", "Icon", "Icon EU"])
+    print(mosmix.head(5))
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=timeseries, y=mosmix, name="Mosmix"))
+    fig.add_trace(go.Scatter(x=timeseries, y=icon, name="Icon"))
+    fig.add_trace(go.Scatter(x=timeseries, y=icon_eu, name="Icon EU"))
+
+
+    fig.update_layout(
+        title=dict(
+            text=f"{city} - {value_name}",
+            x=0.5,
+        ),
+        plot_bgcolor=plot_bg,
+        paper_bgcolor=paper_bg,
+        font_color=fg_color,
+        font_size=10,
+        legend=dict(title="Model"),
+        legend_title=dict(side="top center"),
+        xaxis=dict(
+            title="",
+            showgrid=True,
+            gridcolor=fg_color,
+            zeroline=False,
+            type="date",
+        ),
+        yaxis=dict(
+            title="Cloud Coverage",
+            showgrid=True,
+            gridcolor=fg_color,
+            zeroline=False,
+            maxallowed=110,
+            ticksuffix="%",
+        ),
+        hovermode="x unified"
+    )
+    fig.update_xaxes(
+        minor=dict(
+        ),
+        labelalias="Date",
+        #tickformat="%H:%M",
+        tickangle=30,
+
+        ticklabelmode="period",
+        #Determines where tick labels are drawn with respect to
+            # their corresponding ticks and grid lines. Only has an
+            # effect for axes of `type` "date" When set to "period",
+            # tick labels are drawn in the middle of the period
+            # between ticks.
+        ticklabelposition="outside top",
+    )
+    fig.update_traces(
+        textposition="top center",
+
+    )
 
     # save figure as html
     try:
@@ -62,4 +177,4 @@ def _plot_with_px(df: DataFrame, value_name: str, city: str):
     except IOError as e:
         print_exception(f"{_filename} - _plot_with_px", e)
 
-    fig.show()
+    #fig.show()

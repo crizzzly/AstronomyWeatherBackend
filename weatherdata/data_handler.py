@@ -9,7 +9,7 @@ from dataplotter.plotter import plot_grouped_df
 from utils.constants import FORECAST_FROM_FILE, DEBUG_DATA_HANDLER
 from utils.dataframe_utils import reformat_df_values, clean_dataset
 from utils.data_exploration import debug_dataset
-from utils.file_utils import save_pd_as_json
+from utils.file_utils import save_json_to_file, load_json_from_file
 from weatherdata.dwd_data_fetcher import DwdDataFetcher
 
 
@@ -58,12 +58,12 @@ class DataHandler:
             # save as json
             for (df, name) in zip([self.df_mosmix, self.df_icon, self.df_icon_eu],
                                   ["mosmix", "icon", "icon_eu"]):
-                save_pd_as_json(name, df)
+                save_json_to_file(name, df)
 
         else:
-            self.df_mosmix = self.fetcher.get_mosmix_forecast()
-            self.df_icon = self.fetcher.get_icon_forecast()
-            self.df_icon_eu = self.fetcher.get_icon_eu_forecast()
+            self.df_mosmix = pd.read_json(load_json_from_file("mosmix"))
+            self.df_icon = pd.read_json(load_json_from_file("icon"))
+            self.df_icon_eu = pd.read_json(load_json_from_file("icon_eu"))
 
         if DEBUG_DATA_HANDLER:
             print_debug_message(f"{_filename} - _fetch_new_data\n"
@@ -89,6 +89,7 @@ class DataHandler:
         self.df_mosmix = reformat_df_values(self.df_mosmix)
         self.df_icon = reformat_df_values(self.df_icon)
         self.df_icon_eu = reformat_df_values(self.df_icon_eu)
+
 
     def _sort_data(self):
         """
