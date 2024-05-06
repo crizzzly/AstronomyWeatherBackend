@@ -61,6 +61,8 @@ class DataHandler:
                 save_json_to_file(name, df)
 
         else:
+            # TODO: FutureWarning: Passing literal json to 'read_json' is deprecated.
+            #  To read from a literal string, wrap it in a 'StringIO' object
             self.df_mosmix = pd.read_json(load_json_from_file("mosmix"))
             self.df_icon = pd.read_json(load_json_from_file("icon"))
             self.df_icon_eu = pd.read_json(load_json_from_file("icon_eu"))

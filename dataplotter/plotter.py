@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
 
+from dataplotter.plotly_figure_configs import figure_layout, figure_axes_config
 from dataplotter.plotly_gradient_bg import gradient_plot
 from exceptionhandler.exception_handler import print_function_info, print_info_message, print_debug_message, \
     print_exception
@@ -68,15 +69,16 @@ default_tracecolors = ["#1f77b4", "#ff7f0e", "#2ca0"]
 def plot_grouped_df(group: DataFrameGroupBy, city: str):
     print_function_info(_filename, "plot_grouped_df") if DEBUG_PLOTTER else None
     clouds_df: pd.DataFrame = group.get_group("cloud_cover_total")
+    wind_df: pd.DataFrame = group.get_group("wind_speed")
     #clouds_df.drop(index="parameter", inplace=True)
     if DEBUG_PLOTTER:
         explore_dataframe(clouds_df)
 
     # gradient_plot()
-    _plot_with_px(clouds_df, "Cloud Coverage", city) if clouds_df is not None else None
+    _plot_line_chart(clouds_df, "Cloud Coverage", city) if clouds_df is not None else None
 
 
-def _plot_with_px(df: DataFrame, value_name: str, city: str):
+def _plot_line_chart(df: DataFrame, value_name: str, city: str):
     """
         Plots a dataframe using Plotly Express.
 
@@ -121,54 +123,9 @@ def _plot_with_px(df: DataFrame, value_name: str, city: str):
     fig.add_trace(go.Scatter(x=timeseries, y=icon, name="Icon"))
     fig.add_trace(go.Scatter(x=timeseries, y=icon_eu, name="Icon EU"))
 
+    fig = figure_layout(fig, city, value_name)
+    fig = figure_axes_config(fig)
 
-    fig.update_layout(
-        title=dict(
-            text=f"{city} - {value_name}",
-            x=0.5,
-        ),
-        plot_bgcolor=plot_bg,
-        paper_bgcolor=paper_bg,
-        font_color=fg_color,
-        font_size=10,
-        legend=dict(title="Model"),
-        legend_title=dict(side="top center"),
-        xaxis=dict(
-            title="",
-            showgrid=True,
-            gridcolor=fg_color,
-            zeroline=False,
-            type="date",
-        ),
-        yaxis=dict(
-            title="Cloud Coverage",
-            showgrid=True,
-            gridcolor=fg_color,
-            zeroline=False,
-            maxallowed=110,
-            ticksuffix="%",
-        ),
-        hovermode="x unified"
-    )
-    fig.update_xaxes(
-        minor=dict(
-        ),
-        labelalias="Date",
-        #tickformat="%H:%M",
-        tickangle=30,
-
-        ticklabelmode="period",
-        #Determines where tick labels are drawn with respect to
-            # their corresponding ticks and grid lines. Only has an
-            # effect for axes of `type` "date" When set to "period",
-            # tick labels are drawn in the middle of the period
-            # between ticks.
-        ticklabelposition="outside top",
-    )
-    fig.update_traces(
-        textposition="top center",
-
-    )
 
     # save figure as html
     try:

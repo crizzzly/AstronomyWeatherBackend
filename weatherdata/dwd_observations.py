@@ -1,6 +1,6 @@
 from wetterdienst.core.timeseries.result import StationsResult
 
-from utils.constants_weatherdata import PARAMS_OBSERVATION, PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION
+from utils.constants_weatherdata import PARAMS_OBSERVATION, FORECAST_PARAMS, LAT, LON, DISTANCE_TO_STATION
 from utils.constants import DEBUG_DWD_FETCHER
 
 from datetime import datetime, timedelta

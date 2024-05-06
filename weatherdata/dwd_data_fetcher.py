@@ -10,7 +10,7 @@ from wetterdienst.provider.dwd.dmo import DwdDmoType, DwdDmoRequest
 from wetterdienst.provider.dwd.mosmix import DwdMosmixRequest, DwdMosmixType
 
 from utils.constants import DEBUG_DWD_FETCHER, FORECAST_FROM_FILE
-from utils.constants_weatherdata import PARAMS_MOSMIX, LAT, LON, DISTANCE_TO_STATION
+from utils.constants_weatherdata import FORECAST_PARAMS, LAT, LON, DISTANCE_TO_STATION
 from exceptionhandler.exception_handler import print_function_info, \
     print_debug_message, print_error_message
 from utils.file_utils import save_json_to_file, load_json_from_file
@@ -45,16 +45,16 @@ class DwdDataFetcher:
         # TODO: Catch exceptions
         if not FORECAST_FROM_FILE:
             self.mosmix_stations = DwdMosmixRequest(
-                parameter=PARAMS_MOSMIX,
+                parameter=FORECAST_PARAMS,
                 mosmix_type=DwdMosmixType.LARGE
             )
             self.icon_stations = DwdDmoRequest(
-                parameter=PARAMS_MOSMIX,
+                parameter=FORECAST_PARAMS,
                 station_group="single_stations",
                 dmo_type=DwdDmoType.ICON,
             )
             self.icon_eu_stations = DwdDmoRequest(
-                parameter=PARAMS_MOSMIX,
+                parameter=FORECAST_PARAMS,
                 station_group="single_stations",
                 dmo_type=DwdDmoType.ICON_EU,
             )
