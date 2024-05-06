@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
+from plotly.subplots import make_subplots
 
 from dataplotter.plotly_figure_configs import figure_layout, figure_axes_config
 from dataplotter.plotly_gradient_bg import gradient_plot
@@ -66,44 +67,34 @@ fg_color = "dimgray"
 default_tracecolors = ["#1f77b4", "#ff7f0e", "#2ca0"]
 
 
-def plot_grouped_df(group: DataFrameGroupBy, city: str):
+def plot_dataframes(group: DataFrameGroupBy, city: str):
     print_function_info(_filename, "plot_grouped_df") if DEBUG_PLOTTER else None
+
+    # TODO: move this to dataframe_utils.py
+    # group = group.all().dropna(axis=0)  # .fillna(method="ffill").f
+    # group = group.all().df.sort_index(ascending=True)  # , inplace=True
+
+
     clouds_df: pd.DataFrame = group.get_group("cloud_cover_total")
+    clouds_df = clouds_df.dropna(axis=0)
+    clouds_df = clouds_df.sort_index(ascending=True)
+
     wind_df: pd.DataFrame = group.get_group("wind_speed")
     #clouds_df.drop(index="parameter", inplace=True)
+
     if DEBUG_PLOTTER:
         explore_dataframe(clouds_df)
 
-    # gradient_plot()
-    _plot_line_chart(clouds_df, "Cloud Coverage", city) if clouds_df is not None else None
+    timeseries = clouds_df.index.get_level_values('date')
 
-
-def _plot_line_chart(df: DataFrame, value_name: str, city: str):
-    """
-        Plots a dataframe using Plotly Express.
-
-        Args:
-            df (DataFrame): The dataframe to plot.
-            value_name (str): The name of the value column to plot.
-            city (str): The name of the city.
-
-        Returns:
-            None
-
-        """
-    print_function_info(_filename, "_plot_with_px") if DEBUG_PLOTTER else None
-    df = df.dropna(axis=0)  # .fillna(method="ffill").f
-    df = df.sort_index(ascending=True)  # , inplace=True
-    timeseries = df.index.get_level_values('date')
-
-    mosmix = df["Mosmix"]
-    icon = df["Icon"]
-    icon_eu = df["Icon EU"]
+    mosmix = clouds_df["Mosmix"]
+    icon = clouds_df["Icon"]
+    icon_eu = clouds_df["Icon EU"]
     if DEBUG_PLOTTER:
-        print_info_message(f"df.columns:", df.columns)
-        print_info_message(f"df.index:", df.index)
-        print_debug_message("df.head()", df.head())
-        print_debug_message("df.tail()", df.tail())
+        print_info_message(f"df.columns:", clouds_df.columns)
+        print_info_message(f"df.index:", clouds_df.index)
+        print_debug_message("df.head()", clouds_df.head())
+        print_debug_message("df.tail()", clouds_df.tail())
 
         # #print_debug_message(
         # #    f"{_filename} - _plot_with_px - timeseries", timeseries)
@@ -118,18 +109,27 @@ def _plot_line_chart(df: DataFrame, value_name: str, city: str):
     text="mosmix"
     # fig = px.line(df, x=timeseries, y=["Mosmix", "Icon", "Icon EU"])
     print(mosmix.head(5))
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=timeseries, y=mosmix, name="Mosmix"))
-    fig.add_trace(go.Scatter(x=timeseries, y=icon, name="Icon"))
-    fig.add_trace(go.Scatter(x=timeseries, y=icon_eu, name="Icon EU"))
+    # fig = go.Figure()
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True) #, vertical_spacing=0.0 )
+    fig.add_trace(go.Scatter(x=timeseries, y=mosmix, name="Mosmix"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=timeseries, y=icon, name="Icon"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=timeseries, y=icon_eu, name="Icon EU"), row=1, col=1)
 
-    fig = figure_layout(fig, city, value_name)
+    mosmix = wind_df["Mosmix"]
+    icon = wind_df["Icon"]
+    icon_eu = wind_df["Icon EU"]
+
+    fig.add_trace(go.Scatter(x=timeseries, y=mosmix, name="Mosmix"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=timeseries, y=icon, name="Icon"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=timeseries, y=icon_eu, name="Icon EU"), row=2, col=1)
+
+    fig = figure_layout(fig, city, 'Cloud Coverage', "%")
     fig = figure_axes_config(fig)
 
 
     # save figure as html
     try:
-        fig.write_html(f"templates/{city}-{value_name}.html")
+        fig.write_html(f"templates/{city}-{'Cloud Coverage'}.html")
         # fig.write_html("/")
     except IOError as e:
         print_exception(f"{_filename} - _plot_with_px", e)

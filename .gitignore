@@ -3,4 +3,5 @@ tests.py
 webserver.py
 secrets.py
 /figures/*
+/templates/*
 /json_data/*

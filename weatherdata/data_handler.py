@@ -5,7 +5,7 @@ from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
 
 from exceptionhandler.exception_handler import print_function_info, print_debug_message, print_info_message
-from dataplotter.plotter import plot_grouped_df
+from dataplotter.plotter import plot_dataframes
 from utils.constants import FORECAST_FROM_FILE, DEBUG_DATA_HANDLER
 from utils.dataframe_utils import reformat_df_values, clean_dataset
 from utils.data_exploration import debug_dataset
@@ -40,7 +40,7 @@ class DataHandler:
         self._fetch_new_data()
         self._clean_data()
         self._sort_data()
-        self._create_dataplots()
+        plot_dataframes(self.grouped_df, self.city)
 
     def _fetch_new_data(self) -> None:
         """
@@ -128,18 +128,8 @@ class DataHandler:
 
         action = "\n=========================== rename columns =========================== \n"
         debug_dataset(action, self.grouped_df) if DEBUG_DATA_HANDLER else None
-        # Reset index to make 'parameter' and 'date' regular columns
-        # self.grouped_df.reset_index(inplace=True)
 
-        # explore_group(self.grouped_df)
-        # Now self.df_mosmix contains groups named by parameter,
-        # each containing one date column and three columns with values
 
-        # self.grouped_df = self.df_mosmix
-
-    def _create_dataplots(self):
-        print_function_info(_filename, "_create_dataplots") if DEBUG_DATA_HANDLER else None
-        plot_grouped_df(self.grouped_df, self.city)
 
 
 if __name__ == '__main__':

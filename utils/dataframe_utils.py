@@ -42,10 +42,12 @@ def clean_dataset(df: DataFrame) -> DataFrame:
     df['date'] = pd.to_datetime(df['date'], utc=True)
 
     df = df.query('@df["date"] < @date_max')
+    df = df.dropna(axis=0)
+    # df = df.sort_values(by='date', ascending=True)
 
     if DEBUG_DF_UTILS:
-        print_debug_message("datatypes after cleaning")
-        print_debug_message(str(df.dtypes))
+        print_debug_message("dataset after cleaning", "")
+        print_debug_message(df.head(7), "")
 
     return df
 

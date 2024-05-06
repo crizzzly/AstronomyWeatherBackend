@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 from utils.color_constants import PLOT_BG_COLOR, PAPER_BG_COLOR, FG_COLOR
 
 
-def figure_layout(fig: go.Figure, city: str, value_name: str):
+def figure_layout(fig: go.Figure, city: str, value_name: str, ticksuffix: str):
     fig.update_layout(
             title=dict(
                 text=f"{city} - {value_name}",
@@ -29,7 +29,7 @@ def figure_layout(fig: go.Figure, city: str, value_name: str):
                 gridcolor=FG_COLOR,
                 zeroline=False,
                 maxallowed=110,
-                ticksuffix="%",
+                ticksuffix=ticksuffix,
             ),
             hovermode="x unified"
         )
