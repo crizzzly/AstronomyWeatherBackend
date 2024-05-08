@@ -4,4 +4,6 @@ webserver.py
 secrets.py
 /figures/*
 /templates/*
+/templates/None-Cloud Coverage.html
+/templates/Ellwangen-Rindelbach-Wind Speed.html
 /json_data/*
