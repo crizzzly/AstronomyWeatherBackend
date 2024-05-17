@@ -14,8 +14,10 @@ def debug_dataset(action_str: str, group_df: DataFrame | DataFrameGroupBy):
     msg = ""
     print(f"================================ {action_str} ================================")
     if type(group_df) is DataFrameGroupBy:
+        print("debug_dataset: group_df is DataFrameGroupBy")
         msg += f"columns in group: {group_df.get_group('cloud_cover_total').columns}\n"
     elif type(group_df) is DataFrame:
+        print("debug_dataset: group_df is DataFrame")
         msg += f"columns: {group_df.columns}\n"
     print_debug_message(msg)
 

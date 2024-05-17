@@ -4,11 +4,10 @@ import pandas as pd
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
 
-from exceptionhandler.exception_handler import print_function_info, print_debug_message, print_info_message
+from exceptionhandler.exception_handler import print_function_info, print_debug_message
 from dataplotter.plotter import plot_dataframes
 from utils.constants import FORECAST_FROM_FILE, DEBUG_DATA_HANDLER
-from utils.dataframe_utils import reformat_df_values, clean_dataset
-from utils.data_exploration import debug_dataset
+from utils.dataframe_utils import reformat_df_values, clean_dataset, group_dataframes, create_relative_humidity_group
 from utils.file_utils import save_json_to_file, load_json_from_file
 from weatherdata.dwd_data_fetcher import DwdDataFetcher
 
@@ -16,13 +15,15 @@ from weatherdata.dwd_data_fetcher import DwdDataFetcher
 _filename = os.path.basename(__file__)
 
 
+# TODO: calculate relative humidity
+
 class DataHandler:
     def __init__(self):
         self.fetcher = DwdDataFetcher()
         self.df_mosmix = DataFrame()
         self.df_icon = DataFrame()
         self.df_icon_eu = DataFrame()
-        # TODO: Check why city name isn't saved
+        # TODO: Check why city name isn't saved when loading from file
         self.city = ""
         self.grouped_df = DataFrameGroupBy(DataFrame())
 
@@ -39,7 +40,7 @@ class DataHandler:
 
         self._fetch_new_data()
         self._clean_data()
-        self._sort_data()
+        self._prepare_data()
         plot_dataframes(self.grouped_df, self.city)
 
     def _fetch_new_data(self) -> None:
@@ -78,9 +79,6 @@ class DataHandler:
             print_debug_message(f"{_filename} - _clean_data\n"
                                 f"df_mosmix: {self.df_mosmix}")
 
-        # self.df_mosmix = self.df_mosmix.dropna()
-        # self.df_icon = self.df_icon.dropna()
-        # self.df_icon_eu = self.df_icon_eu.dropna()
 
         self.city = self.fetcher.city
 
@@ -93,41 +91,9 @@ class DataHandler:
         self.df_icon_eu = reformat_df_values(self.df_icon_eu)
 
 
-    def _sort_data(self):
-        """
-        groups dfs of different models by parameters
-        Combines all 3 datamodels to one dataframe and saves it in self.grouped_df
-        """
-        print_function_info(_filename, "_sort_data") if DEBUG_DATA_HANDLER else None
-        if DEBUG_DATA_HANDLER:
-            print_info_message("_________________ data before grouping/sorting _________________", "")
-            print_debug_message("params", self.df_mosmix['parameter'].unique())
-
-        combined = pd.concat([self.df_mosmix.set_index(['parameter', 'date']),
-                              self.df_icon.set_index(['parameter', 'date']),
-                              self.df_icon_eu.set_index(['parameter', 'date'])],
-                             axis=1)
-        combined.columns = ['Mosmix', 'Icon', 'Icon EU']
-
-        action = "\n================= CONCAT =================\n"
-        debug_dataset(action, combined) if DEBUG_DATA_HANDLER else None
-
-        self.grouped_df = combined.groupby(
-            level='parameter',  # Group by 'parameter' index
-            # axis=0,  # Specify grouping along rows
-            dropna=True,
-            # sort=False,
-        )
-
-
-        action = "\n=========================== self.grouped_df =========================== \n"
-        debug_dataset(action, self.grouped_df) if DEBUG_DATA_HANDLER else None
-
-        # Rename the columns to differentiate them
-        self.grouped_df.columns = ['df_mosmix', 'df_icon', 'df_icon_eu']
-
-        action = "\n=========================== rename columns =========================== \n"
-        debug_dataset(action, self.grouped_df) if DEBUG_DATA_HANDLER else None
+    def _prepare_data(self):
+        self.grouped_df = group_dataframes(self.df_mosmix, self.df_icon, self.df_icon_eu)
+        self.grouped_df = create_relative_humidity_group(self.grouped_df)
 
 
 

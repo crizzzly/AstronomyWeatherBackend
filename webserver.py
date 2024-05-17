@@ -1,5 +1,6 @@
 from flask import Flask, send_file, render_template
 
+from exceptionhandler.exception_handler import print_debug_message
 from weatherdata.data_handler import DataHandler
 
 #
@@ -13,6 +14,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 
 
+# TODO: Why is the fetching/data processing is running twice on start?
+
 @app.route('/weather', methods=['GET'])
 def get_weather():
 
@@ -24,6 +27,7 @@ def get_weather():
 # TODO: Use ony one endpoint to get all images
 @app.route('/get_temp_image', methods=['GET'])
 def get_temp_image():
+    print_debug_message("Webserver", "returning temp image")
     image_path = 'figures/Temperature.png'
     return send_file(image_path, mimetype='image/png')
 
@@ -48,7 +52,7 @@ def get_wind_image():
 
 @app.route('/', methods=['GET'])
 def clouds():
-    image_path = 'Ellwangen-Rindelbach-Cloud Coverage.html'
+    image_path = 'Ellwangen-Rindelbach.html'
     try:
         return render_template(image_path)  # send_file(image_path, mimetype='html')
     except FileNotFoundError:

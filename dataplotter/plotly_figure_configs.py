@@ -5,7 +5,13 @@ from plotly.graph_objs import Figure
 from utils.color_constants import PLOT_BG_COLOR, PAPER_BG_COLOR, FG_COLOR
 
 
-def _create_trace(timeseries: pd.Series, y: pd.Series, model_name: str, parameter_name: str, ) -> go.Scatter:
+def _create_trace(
+        timeseries: pd.Series,
+        y: pd.Series,
+        model_name: str,
+        parameter_name: str,
+        line_style: str = "solid"
+) -> go.Scatter:
     """
         This function creates a Scatter trace for a given timeseries, y-values, model name, and parameter name.
 
@@ -29,14 +35,8 @@ def _create_trace(timeseries: pd.Series, y: pd.Series, model_name: str, paramete
     return fig
 
 
-def create_subplot(
-        fig: go.Figure,
-        timeseries: pd.Series,
-        df: pd.DataFrame,
-        parameter_name: str,
-        row: int,
-        ticksuffix: str,
-) -> Figure:
+def create_subplot(fig: go.Figure, timeseries: pd.Series, df: pd.DataFrame, parameter_name: str, row: int,
+                   ticksuffix: str, line_style="solid", y_max=1000) -> Figure:
     """
         This function creates a subplot for a given figure, timeseries, dataframe, parameter name, row number, and tick suffix.
         It adds traces for Mosmix, Icon, and Icon EU models to the figure, and configures the y-axis.
@@ -51,21 +51,30 @@ def create_subplot(
 
         Returns:
         go.Figure: The updated figure with the added subplot.
+        :param y_max:
+        :param row:
+        :param fig:
+        :param timeseries:
+        :param df:
+        :param parameter_name:
+        :param ticksuffix:
+        :param line_style:
         """
     mosmix = df["Mosmix"]
     icon = df["Icon"]
     icon_eu = df["Icon EU"]
 
     fig.add_trace(
-        _create_trace(timeseries, mosmix, "Mosmix", parameter_name),
+        _create_trace(
+            timeseries, mosmix, "Mosmix", parameter_name, line_style
+        ), row=row, col=1
+    )
+    fig.add_trace(
+        _create_trace(timeseries, icon, "Icon", parameter_name, line_style),
         row=row, col=1
     )
     fig.add_trace(
-        _create_trace(timeseries, icon, "Icon", parameter_name),
-        row=row, col=1
-    )
-    fig.add_trace(
-        _create_trace(timeseries, icon_eu, "Icon EU", parameter_name),
+        _create_trace(timeseries, icon_eu, "Icon EU", parameter_name, line_style),
         row=row, col=1
     )
 
@@ -73,9 +82,9 @@ def create_subplot(
         showgrid=True,
         gridcolor=FG_COLOR,
         zeroline=False,
-        maxallowed=110,
+        maxallowed=y_max,
         ticksuffix=ticksuffix,
-        row=2, col=1
+        row=row, col=1
     )
 
     return fig

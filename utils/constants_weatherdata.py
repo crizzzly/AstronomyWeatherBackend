@@ -4,12 +4,9 @@ LON = 9.9
 DISTANCE_TO_STATION = 50.0
 DF_LENGTH = 78
 
-MOSMIX = "mosmix_forecast"
-ICON = "icon_forecast"
-ICON_EU = "icon_eu_forecast"
 
 PARAMS_BEAUTIFIED = [
-    "Cloud Cover",
+    "Cloud Coverage",
     "Temperature",
     "Dew Point",
     "Wind Speed",

@@ -5,7 +5,6 @@ from pprint import pprint
 
 import pandas as pd
 import pytz
-from wetterdienst import Period  #, Parameter
 from wetterdienst.provider.dwd.dmo import DwdDmoType, DwdDmoRequest
 from wetterdienst.provider.dwd.mosmix import DwdMosmixRequest, DwdMosmixType
 
